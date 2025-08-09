@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مراقب البثوث المباشرة</title>
+    <title id="pageTitle">مراقب البثوث المباشرة</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -41,10 +41,31 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
             color: white;
             font-size: 1.5rem;
             font-weight: bold;
+        }
+        
+        .logo img {
+            max-height: 40px;
+            border-radius: 8px;
+        }
+        
+        .site-title {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .site-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .site-description {
+            font-size: 0.9rem;
+            opacity: 0.8;
         }
         
         .add-btn {
@@ -113,18 +134,17 @@
         
         .channels-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
             gap: 25px;
         }
         
         .channel-card {
             background: rgba(255, 255, 255, 0.95);
             border-radius: 15px;
-            padding: 25px;
+            overflow: hidden;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
             position: relative;
-            overflow: hidden;
         }
         
         .channel-card:hover {
@@ -132,28 +152,51 @@
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
         }
         
+        .channel-thumbnail {
+            position: relative;
+            height: 200px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        
+        .channel-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .thumbnail-placeholder {
+            color: white;
+            font-size: 3rem;
+            opacity: 0.7;
+        }
+        
         .status-badge {
             position: absolute;
             top: 15px;
             left: 15px;
-            padding: 5px 12px;
-            border-radius: 15px;
+            padding: 8px 15px;
+            border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 600;
             color: white;
+            backdrop-filter: blur(10px);
         }
         
         .status-live {
-            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            background: rgba(231, 76, 60, 0.9);
             animation: pulse 2s infinite;
         }
         
         .status-upcoming {
-            background: linear-gradient(45deg, #f39c12, #e67e22);
+            background: rgba(243, 156, 18, 0.9);
         }
         
         .status-offline {
-            background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+            background: rgba(149, 165, 166, 0.9);
         }
         
         @keyframes pulse {
@@ -162,11 +205,51 @@
             100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
         }
         
+        .channel-info {
+            padding: 25px;
+        }
+        
         .channel-name {
-            margin: 20px 0 15px 0;
             font-size: 1.3rem;
             font-weight: 600;
             color: #2c3e50;
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .stream-title {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 15px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+        
+        .stream-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #7f8c8d;
+        }
+        
+        .viewers-count {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .stream-time {
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         
         .channel-actions {
@@ -178,7 +261,7 @@
         .watch-btn {
             background: linear-gradient(45deg, #667eea, #764ba2);
             border: none;
-            padding: 10px 20px;
+            padding: 12px 24px;
             border-radius: 25px;
             color: white;
             font-weight: 600;
@@ -188,11 +271,23 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            flex: 1;
+            justify-content: center;
         }
         
         .watch-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .watch-btn.disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .watch-btn.disabled:hover {
+            transform: none;
+            box-shadow: none;
         }
         
         .modal {
@@ -347,15 +442,23 @@
                 margin: 5% auto;
                 padding: 30px 20px;
             }
+            
+            .site-title {
+                align-items: center;
+                text-align: center;
+            }
         }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <div class="logo">
+            <div class="logo" id="siteHeader">
                 <i class="fas fa-broadcast-tower"></i>
-                <span>مراقب البثوث</span>
+                <div class="site-title">
+                    <div class="site-name" id="siteName">مراقب البثوث</div>
+                    <div class="site-description" id="siteDescription">منصة مراقبة البثوث المباشرة</div>
+                </div>
             </div>
             <button class="add-btn" onclick="openModal()">
                 <i class="fas fa-plus"></i>
@@ -387,15 +490,7 @@
                     <i class="fas fa-plus-circle"></i>
                     إضافة قناة جديدة
                 </h3>
-                <p class="modal-subtitle">أدخل تفاصيل القناة وسنقوم بمراجعتها</p>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">
-                    <i class="fas fa-tv"></i>
-                    اسم القناة
-                </label>
-                <input type="text" id="channelName" class="form-input" placeholder="مثال: قناة الجزيرة">
+                <p class="modal-subtitle">أدخل رابط القناة وبريدك الإلكتروني</p>
             </div>
             
             <div class="form-group">
@@ -403,7 +498,15 @@
                     <i class="fas fa-link"></i>
                     رابط القناة
                 </label>
-                <input type="url" id="channelUrl" class="form-input" placeholder="https://www.youtube.com/channel/...">
+                <input type="url" id="channelUrl" class="form-input" placeholder="https://www.youtube.com/channel/... أو https://www.youtube.com/@username">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-envelope"></i>
+                    البريد الإلكتروني
+                </label>
+                <input type="email" id="userEmail" class="form-input" placeholder="example@email.com">
             </div>
             
             <div class="form-actions">
@@ -437,6 +540,39 @@
         const db = firebase.firestore();
         
         let channels = [];
+        let siteSettings = {};
+        
+        async function loadSiteSettings() {
+            try {
+                const docSnap = await db.collection('settings').doc('site').get();
+                if (docSnap.exists) {
+                    siteSettings = docSnap.data();
+                    updateSiteHeader();
+                }
+            } catch (error) {
+                console.error('Error loading site settings:', error);
+            }
+        }
+        
+        function updateSiteHeader() {
+            if (siteSettings.siteName) {
+                document.getElementById('siteName').textContent = siteSettings.siteName;
+                document.getElementById('pageTitle').textContent = siteSettings.siteName;
+            }
+            if (siteSettings.siteDescription) {
+                document.getElementById('siteDescription').textContent = siteSettings.siteDescription;
+            }
+            if (siteSettings.siteLogo) {
+                const logoContainer = document.getElementById('siteHeader');
+                logoContainer.innerHTML = `
+                    <img src="${siteSettings.siteLogo}" alt="الشعار">
+                    <div class="site-title">
+                        <div class="site-name">${siteSettings.siteName || 'مراقب البثوث'}</div>
+                        <div class="site-description">${siteSettings.siteDescription || 'منصة مراقبة البثوث المباشرة'}</div>
+                    </div>
+                `;
+            }
+        }
         
         async function loadChannels() {
             document.getElementById('loading').style.display = 'block';
@@ -452,6 +588,7 @@
                     snapshot.forEach(doc => {
                         channels.push({ id: doc.id, ...doc.data() });
                     });
+                    await updateChannelsWithYouTubeData();
                     renderChannels();
                 }
                 
@@ -460,6 +597,128 @@
                 console.error('Error loading channels:', error);
             } finally {
                 document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        async function updateChannelsWithYouTubeData() {
+            try {
+                const apiKeyDoc = await db.collection('settings').doc('youtube').get();
+                if (!apiKeyDoc.exists || !apiKeyDoc.data().apiKey) {
+                    console.log('No YouTube API key found');
+                    return;
+                }
+                
+                const apiKey = apiKeyDoc.data().apiKey;
+                
+                for (let channel of channels) {
+                    const channelId = extractChannelId(channel.url);
+                    if (channelId) {
+                        await fetchChannelData(channelId, apiKey, channel);
+                        await fetchLiveStreamData(channelId, apiKey, channel);
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating channels with YouTube data:', error);
+            }
+        }
+        
+        function extractChannelId(url) {
+            const patterns = [
+                /youtube\.com\/channel\/([a-zA-Z0-9_-]+)/,
+                /youtube\.com\/c\/([a-zA-Z0-9_-]+)/,
+                /youtube\.com\/@([a-zA-Z0-9_-]+)/,
+                /youtube\.com\/user\/([a-zA-Z0-9_-]+)/
+            ];
+            
+            for (let pattern of patterns) {
+                const match = url.match(pattern);
+                if (match) return match[1];
+            }
+            return null;
+        }
+        
+        async function fetchChannelData(channelId, apiKey, channel) {
+            try {
+                let apiUrl;
+                
+                if (channelId.startsWith('UC') || channelId.length === 24) {
+                    // Channel ID format
+                    apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${apiKey}`;
+                } else {
+                    // Username or handle format
+                    apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forUsername=${channelId}&key=${apiKey}`;
+                }
+                
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                
+                if (data.items && data.items.length > 0) {
+                    const channelData = data.items[0];
+                    channel.title = channelData.snippet.title;
+                    channel.thumbnail = channelData.snippet.thumbnails.medium?.url;
+                    channel.description = channelData.snippet.description;
+                    channel.subscriberCount = channelData.statistics.subscriberCount;
+                    channel.realChannelId = channelData.id;
+                }
+            } catch (error) {
+                console.error('Error fetching channel data:', error);
+            }
+        }
+        
+        async function fetchLiveStreamData(channelId, apiKey, channel) {
+            try {
+                const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channel.realChannelId || channelId}&type=video&eventType=live&key=${apiKey}`;
+                
+                const response = await fetch(searchUrl);
+                const data = await response.json();
+                
+                if (data.items && data.items.length > 0) {
+                    // Live stream found
+                    const liveStream = data.items[0];
+                    channel.status = 'live';
+                    channel.streamTitle = liveStream.snippet.title;
+                    channel.streamThumbnail = liveStream.snippet.thumbnails.medium?.url;
+                    channel.streamUrl = `https://www.youtube.com/watch?v=${liveStream.id.videoId}`;
+                    
+                    // Get live stream details
+                    const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,statistics&id=${liveStream.id.videoId}&key=${apiKey}`;
+                    const videoResponse = await fetch(videoUrl);
+                    const videoData = await videoResponse.json();
+                    
+                    if (videoData.items && videoData.items.length > 0) {
+                        const videoDetails = videoData.items[0];
+                        channel.viewerCount = videoDetails.liveStreamingDetails?.concurrentViewers;
+                        channel.startTime = videoDetails.liveStreamingDetails?.actualStartTime;
+                    }
+                } else {
+                    // Check for upcoming streams
+                    const upcomingUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channel.realChannelId || channelId}&type=video&eventType=upcoming&key=${apiKey}`;
+                    
+                    const upcomingResponse = await fetch(upcomingUrl);
+                    const upcomingData = await upcomingResponse.json();
+                    
+                    if (upcomingData.items && upcomingData.items.length > 0) {
+                        const upcomingStream = upcomingData.items[0];
+                        channel.status = 'upcoming';
+                        channel.streamTitle = upcomingStream.snippet.title;
+                        channel.streamThumbnail = upcomingStream.snippet.thumbnails.medium?.url;
+                        channel.streamUrl = `https://www.youtube.com/watch?v=${upcomingStream.id.videoId}`;
+                        
+                        // Get scheduled start time
+                        const videoUrl = `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails&id=${upcomingStream.id.videoId}&key=${apiKey}`;
+                        const videoResponse = await fetch(videoUrl);
+                        const videoData = await videoResponse.json();
+                        
+                        if (videoData.items && videoData.items.length > 0) {
+                            channel.scheduledStartTime = videoData.items[0].liveStreamingDetails?.scheduledStartTime;
+                        }
+                    } else {
+                        channel.status = 'offline';
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching live stream data:', error);
+                channel.status = 'offline';
             }
         }
         
@@ -473,22 +732,103 @@
                 const statusText = getStatusText(channel.status);
                 const statusIcon = getStatusIcon(channel.status);
                 
+                const thumbnailUrl = channel.streamThumbnail || channel.thumbnail || '';
+                const streamTitle = channel.streamTitle || 'لا يوجد بث حالياً';
+                const channelTitle = channel.title || channel.name;
+                const watchUrl = channel.streamUrl || channel.url;
+                
+                let additionalInfo = '';
+                if (channel.status === 'live') {
+                    const viewers = channel.viewerCount ? formatNumber(channel.viewerCount) : '';
+                    const duration = channel.startTime ? calculateStreamDuration(channel.startTime) : '';
+                    additionalInfo = `
+                        <div class="stream-info">
+                            ${viewers ? `<div class="viewers-count"><i class="fas fa-eye"></i> ${viewers} مشاهد</div>` : ''}
+                            ${duration ? `<div class="stream-time"><i class="fas fa-clock"></i> ${duration}</div>` : ''}
+                        </div>
+                    `;
+                } else if (channel.status === 'upcoming') {
+                    const scheduledTime = channel.scheduledStartTime ? formatScheduledTime(channel.scheduledStartTime) : '';
+                    if (scheduledTime) {
+                        additionalInfo = `
+                            <div class="stream-info">
+                                <div class="stream-time"><i class="fas fa-calendar"></i> ${scheduledTime}</div>
+                            </div>
+                        `;
+                    }
+                }
+                
                 container.innerHTML += `
                     <div class="channel-card">
-                        <div class="status-badge ${statusClass}">
-                            <i class="${statusIcon}"></i>
-                            ${statusText}
+                        <div class="channel-thumbnail">
+                            ${thumbnailUrl ? `<img src="${thumbnailUrl}" alt="${channelTitle}">` : `<div class="thumbnail-placeholder"><i class="fas fa-tv"></i></div>`}
+                            <div class="status-badge ${statusClass}">
+                                <i class="${statusIcon}"></i>
+                                ${statusText}
+                            </div>
                         </div>
-                        <h4 class="channel-name">${channel.name}</h4>
-                        <div class="channel-actions">
-                            <a href="${channel.url}" target="_blank" class="watch-btn">
-                                <i class="fas fa-external-link-alt"></i>
-                                مشاهدة
-                            </a>
+                        <div class="channel-info">
+                            <h4 class="channel-name">${channelTitle}</h4>
+                            <p class="stream-title">${streamTitle}</p>
+                            ${additionalInfo}
+                            <div class="channel-actions">
+                                <a href="${watchUrl}" target="_blank" class="watch-btn ${channel.status === 'offline' ? 'disabled' : ''}">
+                                    <i class="fas fa-external-link-alt"></i>
+                                    ${channel.status === 'live' ? 'مشاهدة مباشرة' : channel.status === 'upcoming' ? 'عرض البث' : 'زيارة القناة'}
+                                </a>
+                            </div>
                         </div>
                     </div>
                 `;
             });
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+        
+        function calculateStreamDuration(startTime) {
+            const start = new Date(startTime);
+            const now = new Date();
+            const diff = now - start;
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}`;
+            } else {
+                return `${minutes} دقيقة`;
+            }
+        }
+        
+        function formatScheduledTime(scheduledTime) {
+            const date = new Date(scheduledTime);
+            const now = new Date();
+            const diff = date - now;
+            
+            if (diff < 0) return 'بدأ مؤخراً';
+            
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            
+            if (hours > 24) {
+                return date.toLocaleDateString('ar-SA', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } else if (hours > 0) {
+                return `خلال ${hours} ساعة و ${minutes} دقيقة`;
+            } else {
+                return `خلال ${minutes} دقيقة`;
+            }
         }
         
         function showEmptyState() {
@@ -556,10 +896,10 @@
         }
         
         async function submitRequest() {
-            const name = document.getElementById('channelName').value.trim();
             const url = document.getElementById('channelUrl').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
             
-            if (!name || !url) {
+            if (!url || !email) {
                 alert("يرجى إدخال جميع الحقول");
                 return;
             }
@@ -569,10 +909,19 @@
                 return;
             }
             
+            if (!isValidEmail(email)) {
+                alert("يرجى إدخال بريد إلكتروني صحيح");
+                return;
+            }
+            
+            // استخراج اسم القناة من الرابط
+            let channelName = extractChannelNameFromUrl(url);
+            
             try {
                 await db.collection('requests').add({ 
-                    name, 
-                    url, 
+                    name: channelName,
+                    url: url,
+                    email: email,
                     timestamp: new Date(),
                     status: 'pending'
                 });
@@ -581,21 +930,49 @@
                 closeModal();
                 
                 // مسح النموذج
-                document.getElementById('channelName').value = '';
                 document.getElementById('channelUrl').value = '';
+                document.getElementById('userEmail').value = '';
             } catch (error) {
                 console.error('Error submitting request:', error);
                 alert("حدث خطأ أثناء إرسال الطلب. يرجى المحاولة مرة أخرى");
             }
         }
         
+        function extractChannelNameFromUrl(url) {
+            // استخراج اسم القناة من الرابط
+            const patterns = [
+                { regex: /youtube\.com\/channel\/([a-zA-Z0-9_-]+)/, name: 'قناة يوتيوب' },
+                { regex: /youtube\.com\/c\/([a-zA-Z0-9_-]+)/, name: (match) => match[1] },
+                { regex: /youtube\.com\/@([a-zA-Z0-9_-]+)/, name: (match) => match[1] },
+                { regex: /youtube\.com\/user\/([a-zA-Z0-9_-]+)/, name: (match) => match[1] }
+            ];
+            
+            for (let pattern of patterns) {
+                const match = url.match(pattern.regex);
+                if (match) {
+                    if (typeof pattern.name === 'function') {
+                        return pattern.name(match);
+                    } else {
+                        return pattern.name;
+                    }
+                }
+            }
+            
+            return 'قناة جديدة';
+        }
+        
         function isValidUrl(string) {
             try {
-                new URL(string);
-                return true;
+                const url = new URL(string);
+                return url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be');
             } catch (_) {
                 return false;
             }
+        }
+        
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
         }
         
         function openModal() {
@@ -617,10 +994,15 @@
         }
         
         // تحميل البيانات عند تحميل الصفحة
-        loadChannels();
+        async function initializeApp() {
+            await loadSiteSettings();
+            await loadChannels();
+        }
         
-        // تحديث البيانات كل دقيقة
-        setInterval(loadChannels, 60000);
+        initializeApp();
+        
+        // تحديث البيانات كل 2 دقيقة
+        setInterval(loadChannels, 120000);
     </script>
 </body>
 </html>
