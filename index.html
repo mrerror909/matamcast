@@ -413,6 +413,10 @@
             color: rgba(255, 255, 255, 0.8);
         }
         
+        .loading.show {
+            display: block;
+        }
+        
         .spinner {
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
@@ -433,6 +437,10 @@
             padding: 80px 20px;
             color: rgba(255, 255, 255, 0.8);
             display: none;
+        }
+        
+        .empty-state.show {
+            display: block;
         }
         
         .empty-icon {
@@ -458,6 +466,11 @@
             margin-top: 40px;
             text-align: center;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        
+        .contact-section.show {
+            display: block;
         }
         
         .contact-title {
@@ -537,6 +550,52 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
+        }
+        
+        .error-message {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+        
+        .error-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .error-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .error-subtitle {
+            font-size: 1rem;
+            opacity: 0.7;
+            margin-bottom: 20px;
+        }
+        
+        .retry-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .retry-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
         
         @media (max-width: 768px) {
@@ -651,11 +710,13 @@
             <p class="empty-subtitle">لم يتم العثور على أي قنوات مطابقة</p>
         </div>
 
+        <div id="errorContainer"></div>
+
         <div class="channels-grid" id="channels">
             <!-- سيتم ملؤها بالجافاسكريبت -->
         </div>
 
-        <div class="contact-section" id="contactSection" style="display: none;">
+        <div class="contact-section" id="contactSection">
             <h3 class="contact-title">
                 <i class="fas fa-envelope"></i>
                 للتواصل معنا
@@ -688,9 +749,8 @@
             measurementId: "G-TE3KKNE1LH"
         };
         
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        
+        // متغيرات عامة
+        let db;
         let channels = [];
         let filteredChannels = [];
         let currentView = 'grid';
@@ -698,31 +758,63 @@
         let currentSearch = '';
         let youtubeApiKey = '';
         let contactInfo = {};
+        let siteSettings = {};
+        let isLoading = false;
+        
+        // تهيئة Firebase
+        function initializeFirebase() {
+            try {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
+                db = firebase.firestore();
+                console.log('تم تهيئة Firebase بنجاح');
+                return true;
+            } catch (error) {
+                console.error('خطأ في تهيئة Firebase:', error);
+                showError('خطأ في الاتصال بقاعدة البيانات');
+                return false;
+            }
+        }
         
         // تحميل إعدادات الموقع
         async function loadSiteSettings() {
             try {
                 const docSnap = await db.collection('settings').doc('site').get();
                 if (docSnap.exists) {
-                    const settings = docSnap.data();
-                    if (settings.siteName) {
-                        document.getElementById('siteName').textContent = settings.siteName;
-                        document.title = settings.siteName;
-                    }
-                    if (settings.siteDescription) {
-                        document.getElementById('siteDescription').textContent = settings.siteDescription;
-                    }
-                    if (settings.siteLogo) {
-                        const logo = document.getElementById('siteHeader');
-                        const img = document.createElement('img');
-                        img.src = settings.siteLogo;
-                        img.style.maxHeight = '40px';
-                        img.style.borderRadius = '8px';
-                        logo.insertBefore(img, logo.firstChild);
-                    }
+                    siteSettings = docSnap.data();
+                    updateSiteUI();
                 }
             } catch (error) {
                 console.error('خطأ في تحميل إعدادات الموقع:', error);
+            }
+        }
+        
+        // تحديث واجهة الموقع
+        function updateSiteUI() {
+            if (siteSettings.siteName) {
+                document.getElementById('siteName').textContent = siteSettings.siteName;
+                document.getElementById('pageTitle').textContent = siteSettings.siteName;
+                document.title = siteSettings.siteName;
+            }
+            
+            if (siteSettings.siteDescription) {
+                document.getElementById('siteDescription').textContent = siteSettings.siteDescription;
+            }
+            
+            if (siteSettings.siteLogo) {
+                const logo = document.getElementById('siteHeader');
+                const existingImg = logo.querySelector('img');
+                if (existingImg) {
+                    existingImg.remove();
+                }
+                
+                const img = document.createElement('img');
+                img.src = siteSettings.siteLogo;
+                img.alt = 'شعار الموقع';
+                img.style.maxHeight = '40px';
+                img.style.borderRadius = '8px';
+                logo.insertBefore(img, logo.firstChild);
             }
         }
         
@@ -744,36 +836,40 @@
             const contactSection = document.getElementById('contactSection');
             const contactButtons = document.getElementById('contactButtons');
             
-            if (contactInfo.email || contactInfo.whatsapp) {
-                let buttonsHtml = '';
-                
-                if (contactInfo.email) {
-                    buttonsHtml += `
-                        <a href="mailto:${contactInfo.email}" class="contact-btn contact-email">
-                            <i class="fas fa-envelope"></i>
-                            البريد الإلكتروني
-                        </a>
-                    `;
-                }
-                
-                if (contactInfo.whatsapp) {
-                    buttonsHtml += `
-                        <a href="https://wa.me/${contactInfo.whatsapp}" target="_blank" class="contact-btn contact-whatsapp">
-                            <i class="fab fa-whatsapp"></i>
-                            واتساب
-                        </a>
-                    `;
-                }
-                
+            let buttonsHtml = '';
+            let hasContacts = false;
+            
+            if (contactInfo.email) {
                 buttonsHtml += `
-                    <button onclick="requestChannel()" class="contact-btn contact-request">
-                        <i class="fas fa-plus-circle"></i>
-                        طلب إضافة قناة
-                    </button>
+                    <a href="mailto:${contactInfo.email}" class="contact-btn contact-email">
+                        <i class="fas fa-envelope"></i>
+                        البريد الإلكتروني
+                    </a>
                 `;
-                
-                contactButtons.innerHTML = buttonsHtml;
-                contactSection.style.display = 'block';
+                hasContacts = true;
+            }
+            
+            if (contactInfo.whatsapp) {
+                buttonsHtml += `
+                    <a href="https://wa.me/${contactInfo.whatsapp}" target="_blank" class="contact-btn contact-whatsapp">
+                        <i class="fab fa-whatsapp"></i>
+                        واتساب
+                    </a>
+                `;
+                hasContacts = true;
+            }
+            
+            buttonsHtml += `
+                <button onclick="requestChannel()" class="contact-btn contact-request">
+                    <i class="fas fa-plus-circle"></i>
+                    طلب إضافة قناة
+                </button>
+            `;
+            
+            contactButtons.innerHTML = buttonsHtml;
+            
+            if (hasContacts || true) { // نعرض دائماً زر طلب إضافة قناة
+                contactSection.classList.add('show');
             }
         }
         
@@ -782,15 +878,19 @@
             try {
                 const docSnap = await db.collection('settings').doc('youtube').get();
                 if (docSnap.exists) {
-                    youtubeApiKey = docSnap.data().apiKey || '';
+                    const data = docSnap.data();
+                    youtubeApiKey = data.apiKey || '';
+                    console.log('تم تحميل مفتاح YouTube API:', youtubeApiKey ? 'متوفر' : 'غير متوفر');
                 }
             } catch (error) {
                 console.error('خطأ في تحميل مفتاح API:', error);
             }
         }
         
-        // استخراج معرف القناة المحسن
+        // استخراج معرف القناة
         function extractChannelId(url) {
+            if (!url) return null;
+            
             const patterns = [
                 { regex: /youtube\.com\/channel\/([a-zA-Z0-9_-]+)/, type: 'channel_id' },
                 { regex: /youtube\.com\/c\/([a-zA-Z0-9_-]+)/, type: 'custom_url' },
@@ -813,7 +913,7 @@
         
         // جلب بيانات القناة من YouTube API
         async function fetchChannelData(channelInfo) {
-            if (!youtubeApiKey) return null;
+            if (!youtubeApiKey || !channelInfo) return null;
             
             try {
                 let apiUrl;
@@ -821,7 +921,7 @@
                 if (channelInfo.isChannelId) {
                     apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelInfo.value}&key=${youtubeApiKey}`;
                 } else {
-                    // محاولة البحث بالاسم المخصص أو المعرف
+                    // البحث عن القناة بالاسم أو المعرف
                     let searchUrl;
                     if (channelInfo.type === 'handle') {
                         searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${channelInfo.value}&key=${youtubeApiKey}&maxResults=1`;
@@ -866,7 +966,7 @@
                         title: channelData.snippet.title,
                         thumbnail: channelData.snippet.thumbnails.medium?.url,
                         description: channelData.snippet.description,
-                        subscriberCount: channelData.statistics.subscriberCount
+                        subscriberCount: channelData.statistics?.subscriberCount
                     };
                 }
                 
@@ -973,69 +1073,138 @@
         
         // تحميل القنوات
         async function loadChannels() {
+            if (isLoading) return;
+            isLoading = true;
+            
             showLoading(true);
+            clearError();
             
             try {
+                console.log('بدء تحميل القنوات...');
+                
+                // تحميل مفتاح API أولاً
                 await loadYouTubeApiKey();
                 
-                const snapshot = await db.collection('channels').orderBy('order', 'asc').get();
+                const snapshot = await db.collection('channels')
+                    .orderBy('order', 'asc')
+                    .get();
+                
                 channels = [];
                 
                 if (!snapshot.empty) {
-                    const channelPromises = [];
+                    console.log(`تم العثور على ${snapshot.docs.length} قناة`);
                     
-                    snapshot.forEach(doc => {
+                    // معالجة القنوات بشكل متتالي لتجنب تجاوز حدود API
+                    for (let doc of snapshot.docs) {
                         const channelData = { id: doc.id, ...doc.data() };
-                        channelPromises.push(processChannel(channelData));
-                    });
-                    
-                    channels = await Promise.all(channelPromises);
+                        const processedChannel = await processChannel(channelData);
+                        channels.push(processedChannel);
+                        
+                        // تحديث العرض تدريجياً
+                        applyFilters();
+                        
+                        // توقف قصير بين الطلبات
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+                } else {
+                    console.log('لا توجد قنوات في قاعدة البيانات');
                 }
                 
+                console.log('تم تحميل جميع القنوات بنجاح');
                 applyFilters();
                 updateLastUpdated();
                 
             } catch (error) {
                 console.error('خطأ في تحميل القنوات:', error);
-                showError('حدث خطأ في تحميل القنوات');
+                showError('حدث خطأ في تحميل القنوات. يرجى المحاولة مرة أخرى.');
             } finally {
                 showLoading(false);
+                isLoading = false;
             }
         }
         
         // معالجة قناة واحدة
         async function processChannel(channelData) {
-            const channelInfo = extractChannelId(channelData.url);
-            
-            if (channelInfo && youtubeApiKey) {
-                // الحصول على بيانات القناة
-                const apiChannelData = await fetchChannelData(channelInfo);
-                if (apiChannelData) {
-                    Object.assign(channelData, apiChannelData);
-                    
-                    // البحث عن البث المباشر
-                    const liveData = await fetchLiveStreamData(apiChannelData.id);
-                    Object.assign(channelData, liveData);
+            try {
+                const channelInfo = extractChannelId(channelData.url);
+                
+                if (channelInfo && youtubeApiKey) {
+                    // الحصول على بيانات القناة
+                    const apiChannelData = await fetchChannelData(channelInfo);
+                    if (apiChannelData) {
+                        // دمج البيانات من API
+                        Object.assign(channelData, {
+                            title: apiChannelData.title,
+                            thumbnail: apiChannelData.thumbnail,
+                            description: apiChannelData.description
+                        });
+                        
+                        // البحث عن البث المباشر
+                        const liveData = await fetchLiveStreamData(apiChannelData.id);
+                        Object.assign(channelData, liveData);
+                    } else {
+                        channelData.status = 'error';
+                        channelData.error = 'فشل في جلب بيانات القناة';
+                    }
                 } else {
-                    channelData.status = 'error';
-                    channelData.error = 'فشل في جلب بيانات القناة';
+                    // استخدام البيانات المحفوظة
+                    channelData.status = channelData.status || 'offline';
+                    if (!channelInfo) {
+                        channelData.error = 'رابط غير صحيح';
+                    } else if (!youtubeApiKey) {
+                        channelData.error = 'لا يوجد مفتاح API';
+                    }
                 }
-            } else {
-                channelData.status = channelData.status || 'offline';
-                if (!channelInfo) {
-                    channelData.error = 'رابط غير صحيح';
-                } else if (!youtubeApiKey) {
-                    channelData.error = 'لا يوجد مفتاح API';
-                }
+                
+                return channelData;
+                
+            } catch (error) {
+                console.error('خطأ في معالجة القناة:', error);
+                return {
+                    ...channelData,
+                    status: 'error',
+                    error: 'خطأ في المعالجة'
+                };
             }
-            
-            return channelData;
         }
         
         // عرض/إخفاء شاشة التحميل
         function showLoading(show) {
-            document.getElementById('loading').style.display = show ? 'block' : 'none';
-            document.getElementById('channels').style.display = show ? 'none' : 'grid';
+            const loading = document.getElementById('loading');
+            const channels = document.getElementById('channels');
+            const emptyState = document.getElementById('emptyState');
+            
+            if (show) {
+                loading.classList.add('show');
+                channels.style.display = 'none';
+                emptyState.classList.remove('show');
+            } else {
+                loading.classList.remove('show');
+                channels.style.display = 'grid';
+            }
+        }
+        
+        // عرض رسالة خطأ
+        function showError(message) {
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.innerHTML = `
+                <div class="error-message">
+                    <div class="error-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h3 class="error-title">حدث خطأ</h3>
+                    <p class="error-subtitle">${message}</p>
+                    <button class="retry-btn" onclick="initializeApp()">
+                        <i class="fas fa-redo"></i>
+                        إعادة المحاولة
+                    </button>
+                </div>
+            `;
+        }
+        
+        // مسح رسائل الخطأ
+        function clearError() {
+            document.getElementById('errorContainer').innerHTML = '';
         }
         
         // تطبيق الفلاتر
@@ -1043,7 +1212,7 @@
             filteredChannels = channels.filter(channel => {
                 const matchesFilter = currentFilter === 'all' || channel.status === currentFilter;
                 const matchesSearch = !currentSearch || 
-                    (channel.title || channel.name).toLowerCase().includes(currentSearch.toLowerCase()) ||
+                    (channel.title || channel.name || '').toLowerCase().includes(currentSearch.toLowerCase()) ||
                     (channel.streamTitle || '').toLowerCase().includes(currentSearch.toLowerCase());
                 return matchesFilter && matchesSearch;
             });
@@ -1058,11 +1227,11 @@
             
             if (filteredChannels.length === 0) {
                 container.style.display = 'none';
-                emptyState.style.display = 'block';
+                emptyState.classList.add('show');
                 return;
             }
             
-            emptyState.style.display = 'none';
+            emptyState.classList.remove('show');
             container.style.display = 'grid';
             container.innerHTML = '';
             
@@ -1083,8 +1252,8 @@
             
             const thumbnailUrl = channel.streamThumbnail || channel.thumbnail || '';
             const streamTitle = channel.streamTitle || channel.error || 'لا يوجد بث حالياً';
-            const channelTitle = channel.title || channel.name;
-            const watchUrl = channel.streamUrl || channel.url;
+            const channelTitle = channel.title || channel.name || 'قناة غير محددة';
+            const watchUrl = channel.streamUrl || channel.url || '#';
             
             let additionalInfo = '';
             if (channel.status === 'live') {
@@ -1096,20 +1265,21 @@
                         ${duration ? `<div class="stream-time"><i class="fas fa-clock"></i> ${duration}</div>` : ''}
                     </div>
                 `;
-            } else if (channel.status === 'upcoming') {
-                const scheduledTime = channel.scheduledStartTime ? formatScheduledTime(channel.scheduledStartTime) : '';
-                if (scheduledTime) {
-                    additionalInfo = `
-                        <div class="stream-info">
-                            <div class="stream-time"><i class="fas fa-calendar"></i> ${scheduledTime}</div>
-                        </div>
-                    `;
-                }
+            } else if (channel.status === 'upcoming' && channel.scheduledStartTime) {
+                const scheduledTime = formatScheduledTime(channel.scheduledStartTime);
+                additionalInfo = `
+                    <div class="stream-info">
+                        <div class="stream-time"><i class="fas fa-calendar"></i> ${scheduledTime}</div>
+                    </div>
+                `;
             }
             
             div.innerHTML = `
                 <div class="channel-thumbnail">
-                    ${thumbnailUrl ? `<img src="${thumbnailUrl}" alt="${channelTitle}">` : `<div class="thumbnail-placeholder"><i class="fas fa-tv"></i></div>`}
+                    ${thumbnailUrl ? `<img src="${thumbnailUrl}" alt="${channelTitle}" onerror="this.style.display='none'">` : ''}
+                    <div class="thumbnail-placeholder" ${thumbnailUrl ? 'style="display: none"' : ''}>
+                        <i class="fas fa-tv"></i>
+                    </div>
                     <div class="status-badge ${statusClass}">
                         <i class="${statusIcon}"></i>
                         ${statusText}
@@ -1120,7 +1290,7 @@
                     <p class="stream-title">${streamTitle}</p>
                     ${additionalInfo}
                     <div class="channel-actions">
-                        <a href="${watchUrl}" target="_blank" class="watch-btn ${channel.status === 'error' ? 'disabled' : ''}">
+                        <a href="${watchUrl}" target="_blank" class="watch-btn ${channel.status === 'error' || watchUrl === '#' ? 'disabled' : ''}">
                             <i class="fas fa-external-link-alt"></i>
                             ${getButtonText(channel.status)}
                         </a>
@@ -1161,7 +1331,14 @@
             document.querySelectorAll('.filter-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            
+            // العثور على الزر المضغوط وتفعيله
+            const activeBtn = Array.from(document.querySelectorAll('.filter-btn')).find(btn => 
+                btn.onclick.toString().includes(`'${filter}'`)
+            );
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+            }
             
             applyFilters();
         }
@@ -1187,6 +1364,8 @@
             const icon = refreshBtn.querySelector('i');
             const text = refreshBtn.querySelector('span');
             
+            if (isLoading) return;
+            
             refreshBtn.disabled = true;
             icon.style.animation = 'spin 1s linear infinite';
             text.textContent = 'جاري التحديث...';
@@ -1203,12 +1382,10 @@
         // طلب إضافة قناة
         function requestChannel() {
             const name = prompt('اسم القناة:');
-            if (!name) return;
+            if (!name || !name.trim()) return;
             
             const url = prompt('رابط القناة على يوتيوب:');
-            if (!url) return;
-            
-            const email = prompt('بريدك الإلكتروني (اختياري):') || '';
+            if (!url || !url.trim()) return;
             
             // التحقق من صحة الرابط
             if (!url.includes('youtube.com')) {
@@ -1216,7 +1393,14 @@
                 return;
             }
             
+            const email = prompt('بريدك الإلكتروني (اختياري):') || '';
+            
             // إرسال الطلب
+            if (!db) {
+                alert('خطأ في الاتصال بقاعدة البيانات');
+                return;
+            }
+            
             db.collection('requests').add({
                 name: name.trim(),
                 url: url.trim(),
@@ -1262,18 +1446,24 @@
         }
         
         function formatNumber(num) {
-            if (num >= 1000000) {
-                return (num / 1000000).toFixed(1) + 'M';
-            } else if (num >= 1000) {
-                return (num / 1000).toFixed(1) + 'K';
+            if (!num) return '';
+            const number = parseInt(num);
+            if (number >= 1000000) {
+                return (number / 1000000).toFixed(1) + 'M';
+            } else if (number >= 1000) {
+                return (number / 1000).toFixed(1) + 'K';
             }
-            return num.toString();
+            return number.toString();
         }
         
         function calculateStreamDuration(startTime) {
+            if (!startTime) return '';
+            
             const start = new Date(startTime);
             const now = new Date();
             const diff = now - start;
+            
+            if (diff < 0) return '';
             
             const hours = Math.floor(diff / (1000 * 60 * 60));
             const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -1286,6 +1476,8 @@
         }
         
         function formatScheduledTime(scheduledTime) {
+            if (!scheduledTime) return '';
+            
             const date = new Date(scheduledTime);
             const now = new Date();
             const diff = date - now;
@@ -1309,29 +1501,52 @@
             }
         }
         
-        function showError(message) {
-            const container = document.getElementById('channels');
-            container.innerHTML = `
-                <div style="text-align: center; padding: 60px; color: rgba(255, 255, 255, 0.8); background: rgba(255, 255, 255, 0.1); border-radius: 15px;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 4rem; margin-bottom: 20px; opacity: 0.5;"></i>
-                    <h3 style="margin-bottom: 20px;">${message}</h3>
-                    <button onclick="loadChannels()" style="padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: 600;">
-                        <i class="fas fa-redo"></i> إعادة المحاولة
-                    </button>
-                </div>
-            `;
-        }
-        
         // تشغيل التطبيق
         async function initializeApp() {
-            await loadSiteSettings();
-            await loadContactInfo();
+            console.log('بدء تهيئة التطبيق...');
             
-            await loadChannels();
+            // تهيئة Firebase
+            if (!initializeFirebase()) {
+                return;
+            }
             
-            // تحديث دوري كل 3 دقائق
-            setInterval(loadChannels, 180000);
+            try {
+                // تحميل الإعدادات
+                await Promise.all([
+                    loadSiteSettings(),
+                    loadContactInfo()
+                ]);
+                
+                // تحميل القنوات
+                await loadChannels();
+                
+                console.log('تم تهيئة التطبيق بنجاح');
+                
+                // تحديث دوري كل 3 دقائق
+                setInterval(async () => {
+                    if (!isLoading) {
+                        console.log('تحديث دوري...');
+                        await loadChannels();
+                    }
+                }, 180000);
+                
+            } catch (error) {
+                console.error('خطأ في تهيئة التطبيق:', error);
+                showError('فشل في تهيئة التطبيق. يرجى إعادة تحميل الصفحة.');
+            }
         }
         
-        // بدء التطبيق
-        initializeApp();
+        // بدء التطبيق عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('تم تحميل الصفحة، بدء التطبيق...');
+            initializeApp();
+        });
+        
+        // التعامل مع الأخطاء العامة
+        window.addEventListener('error', function(event) {
+            console.error('خطأ JavaScript:', event.error);
+        });
+        
+    </script>
+</body>
+</html>
