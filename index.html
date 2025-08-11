@@ -294,6 +294,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            min-height: 0;
         }
         
         .channel-card.list-view .channel-info {
@@ -317,6 +318,7 @@
             font-size: 1.1rem;
             margin-bottom: 8px;
             -webkit-line-clamp: 1;
+            line-height: 1.2;
         }
         
         .stream-title {
@@ -329,12 +331,15 @@
             overflow: hidden;
             line-height: 1.4;
             flex: 1;
+            min-height: 40px;
         }
         
         .channel-card.list-view .stream-title {
             font-size: 0.9rem;
             margin-bottom: 12px;
             -webkit-line-clamp: 2;
+            line-height: 1.3;
+            min-height: 35px;
         }
         
         .stream-info {
@@ -389,6 +394,7 @@
             padding: 10px 20px;
             font-size: 0.9rem;
             width: auto;
+            min-width: 120px;
         }
         
         .watch-btn:hover {
@@ -598,6 +604,24 @@
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
         
+        .api-status {
+            position: fixed;
+            bottom: 90px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #666;
+            z-index: 999;
+            display: none;
+        }
+        
+        .api-status.show {
+            display: block;
+        }
+        
         @media (max-width: 768px) {
             .channels-grid {
                 grid-template-columns: 1fr;
@@ -735,6 +759,11 @@
         <i class="fas fa-plus"></i>
     </button>
 
+    <div class="api-status" id="apiStatus">
+        <i class="fas fa-clock"></i>
+        <span id="apiStatusText">جاري التحميل...</span>
+    </div>
+
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -760,6 +789,10 @@
         let contactInfo = {};
         let siteSettings = {};
         let isLoading = false;
+        let apiCallCount = 0;
+        let lastApiReset = Date.now();
+        let channelCache = new Map();
+        let cacheExpiry = 5 * 60 * 1000; // 5 دقائق
         
         // تهيئة Firebase
         function initializeFirebase() {
@@ -868,7 +901,7 @@
             
             contactButtons.innerHTML = buttonsHtml;
             
-            if (hasContacts || true) { // نعرض دائماً زر طلب إضافة قناة
+            if (hasContacts || true) {
                 contactSection.classList.add('show');
             }
         }
@@ -885,6 +918,66 @@
             } catch (error) {
                 console.error('خطأ في تحميل مفتاح API:', error);
             }
+        }
+        
+        // فحص وإدارة حدود API
+        function checkApiLimits() {
+            const now = Date.now();
+            
+            // إعادة تعيين العداد كل ساعة
+            if (now - lastApiReset > 3600000) { // ساعة واحدة
+                apiCallCount = 0;
+                lastApiReset = now;
+            }
+            
+            // تحديث حالة API
+            updateApiStatus();
+            
+            // إذا تجاوزنا 80% من الحد الأقصى، نستخدم البيانات المحفوظة فقط
+            return apiCallCount < 800; // 80% من 1000 طلب في الساعة
+        }
+        
+        // تحديث حالة API
+        function updateApiStatus() {
+            const status = document.getElementById('apiStatus');
+            const statusText = document.getElementById('apiStatusText');
+            
+            const remaining = Math.max(0, 1000 - apiCallCount);
+            const percentage = Math.round((remaining / 1000) * 100);
+            
+            statusText.textContent = `API: ${remaining} طلب متبقي (${percentage}%)`;
+            
+            if (percentage > 50) {
+                status.style.background = 'rgba(46, 204, 113, 0.9)';
+                status.style.color = 'white';
+            } else if (percentage > 20) {
+                status.style.background = 'rgba(243, 156, 18, 0.9)';
+                status.style.color = 'white';
+            } else {
+                status.style.background = 'rgba(231, 76, 60, 0.9)';
+                status.style.color = 'white';
+            }
+            
+            if (apiCallCount > 0) {
+                status.classList.add('show');
+            }
+        }
+        
+        // فحص الكاش
+        function getCachedData(channelId) {
+            const cached = channelCache.get(channelId);
+            if (cached && Date.now() - cached.timestamp < cacheExpiry) {
+                return cached.data;
+            }
+            return null;
+        }
+        
+        // حفظ في الكاش
+        function setCachedData(channelId, data) {
+            channelCache.set(channelId, {
+                data: data,
+                timestamp: Date.now()
+            });
         }
         
         // استخراج معرف القناة
@@ -911,17 +1004,33 @@
             return null;
         }
         
-        // جلب بيانات القناة من YouTube API
+        // جلب بيانات القناة من YouTube API مع إدارة الحدود
         async function fetchChannelData(channelInfo) {
             if (!youtubeApiKey || !channelInfo) return null;
             
+            // فحص الكاش أولاً
+            const cacheKey = `channel_${channelInfo.value}`;
+            const cachedData = getCachedData(cacheKey);
+            if (cachedData) {
+                console.log('استخدام البيانات المحفوظة للقناة:', channelInfo.value);
+                return cachedData;
+            }
+            
+            // فحص حدود API
+            if (!checkApiLimits()) {
+                console.log('تم الوصول لحد API، استخدام البيانات المحفوظة');
+                return null;
+            }
+            
             try {
+                apiCallCount += 3; // كل طلب يستهلك حوالي 3 وحدات
+                updateApiStatus();
+                
                 let apiUrl;
                 
                 if (channelInfo.isChannelId) {
                     apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelInfo.value}&key=${youtubeApiKey}`;
                 } else {
-                    // البحث عن القناة بالاسم أو المعرف
                     let searchUrl;
                     if (channelInfo.type === 'handle') {
                         searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${channelInfo.value}&key=${youtubeApiKey}&maxResults=1`;
@@ -961,13 +1070,18 @@
                 
                 if (data.items && data.items.length > 0) {
                     const channelData = data.items[0];
-                    return {
+                    const result = {
                         id: channelData.id,
                         title: channelData.snippet.title,
                         thumbnail: channelData.snippet.thumbnails.medium?.url,
                         description: channelData.snippet.description,
                         subscriberCount: channelData.statistics?.subscriberCount
                     };
+                    
+                    // حفظ في الكاش
+                    setCachedData(cacheKey, result);
+                    
+                    return result;
                 }
                 
                 return null;
@@ -977,13 +1091,30 @@
             }
         }
         
-        // البحث عن البث المباشر
+        // البحث عن البث المباشر مع إدارة الحدود
         async function fetchLiveStreamData(channelId) {
             if (!youtubeApiKey || !channelId) {
                 return { status: 'offline' };
             }
             
+            // فحص الكاش أولاً
+            const cacheKey = `live_${channelId}`;
+            const cachedData = getCachedData(cacheKey);
+            if (cachedData) {
+                console.log('استخدام بيانات البث المحفوظة للقناة:', channelId);
+                return cachedData;
+            }
+            
+            // فحص حدود API
+            if (!checkApiLimits()) {
+                console.log('تم الوصول لحد API، تخطي فحص البث المباشر');
+                return { status: 'offline' };
+            }
+            
             try {
+                apiCallCount += 5; // البحث عن البث المباشر يستهلك وحدات أكثر
+                updateApiStatus();
+                
                 // البحث عن البث المباشر
                 const liveSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&eventType=live&key=${youtubeApiKey}&maxResults=3`;
                 
@@ -998,7 +1129,6 @@
                 if (liveData.items && liveData.items.length > 0) {
                     const liveStream = liveData.items[0];
                     
-                    // الحصول على تفاصيل الفيديو
                     try {
                         const videoDetailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,statistics,snippet&id=${liveStream.id.videoId}&key=${youtubeApiKey}`;
                         const videoResponse = await fetch(videoDetailsUrl);
@@ -1006,7 +1136,7 @@
                         
                         if (videoData.items && videoData.items.length > 0) {
                             const videoDetails = videoData.items[0];
-                            return {
+                            const result = {
                                 status: 'live',
                                 streamTitle: videoDetails.snippet.title,
                                 streamThumbnail: videoDetails.snippet.thumbnails.medium?.url,
@@ -1014,56 +1144,81 @@
                                 viewerCount: videoDetails.liveStreamingDetails?.concurrentViewers,
                                 startTime: videoDetails.liveStreamingDetails?.actualStartTime
                             };
+                            
+                            // حفظ في الكاش لمدة دقيقتين فقط (البث المباشر يتغير سريعاً)
+                            channelCache.set(cacheKey, {
+                                data: result,
+                                timestamp: Date.now(),
+                                expiry: 2 * 60 * 1000 // دقيقتان
+                            });
+                            
+                            return result;
                         }
                     } catch (videoError) {
                         console.error('خطأ في جلب تفاصيل الفيديو:', videoError);
                     }
                     
-                    return {
+                    const result = {
                         status: 'live',
                         streamTitle: liveStream.snippet.title,
                         streamThumbnail: liveStream.snippet.thumbnails.medium?.url,
                         streamUrl: `https://www.youtube.com/watch?v=${liveStream.id.videoId}`
                     };
+                    
+                    setCachedData(cacheKey, result);
+                    return result;
                 }
                 
                 // البحث عن البث القادم
-                const upcomingSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&eventType=upcoming&key=${youtubeApiKey}&maxResults=3`;
-                
-                const upcomingResponse = await fetch(upcomingSearchUrl);
-                const upcomingData = await upcomingResponse.json();
-                
-                if (upcomingData.items && upcomingData.items.length > 0) {
-                    const upcomingStream = upcomingData.items[0];
+                if (checkApiLimits()) {
+                    apiCallCount += 3;
+                    updateApiStatus();
                     
-                    try {
-                        const videoDetailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,snippet&id=${upcomingStream.id.videoId}&key=${youtubeApiKey}`;
-                        const videoResponse = await fetch(videoDetailsUrl);
-                        const videoData = await videoResponse.json();
+                    const upcomingSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&eventType=upcoming&key=${youtubeApiKey}&maxResults=3`;
+                    
+                    const upcomingResponse = await fetch(upcomingSearchUrl);
+                    const upcomingData = await upcomingResponse.json();
+                    
+                    if (upcomingData.items && upcomingData.items.length > 0) {
+                        const upcomingStream = upcomingData.items[0];
                         
-                        if (videoData.items && videoData.items.length > 0) {
-                            const videoDetails = videoData.items[0];
-                            return {
-                                status: 'upcoming',
-                                streamTitle: videoDetails.snippet.title,
-                                streamThumbnail: videoDetails.snippet.thumbnails.medium?.url,
-                                streamUrl: `https://www.youtube.com/watch?v=${upcomingStream.id.videoId}`,
-                                scheduledStartTime: videoDetails.liveStreamingDetails?.scheduledStartTime
-                            };
+                        try {
+                            const videoDetailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,snippet&id=${upcomingStream.id.videoId}&key=${youtubeApiKey}`;
+                            const videoResponse = await fetch(videoDetailsUrl);
+                            const videoData = await videoResponse.json();
+                            
+                            if (videoData.items && videoData.items.length > 0) {
+                                const videoDetails = videoData.items[0];
+                                const result = {
+                                    status: 'upcoming',
+                                    streamTitle: videoDetails.snippet.title,
+                                    streamThumbnail: videoDetails.snippet.thumbnails.medium?.url,
+                                    streamUrl: `https://www.youtube.com/watch?v=${upcomingStream.id.videoId}`,
+                                    scheduledStartTime: videoDetails.liveStreamingDetails?.scheduledStartTime
+                                };
+                                
+                                setCachedData(cacheKey, result);
+                                return result;
+                            }
+                        } catch (videoError) {
+                            console.error('خطأ في جلب تفاصيل الفيديو القادم:', videoError);
                         }
-                    } catch (videoError) {
-                        console.error('خطأ في جلب تفاصيل الفيديو القادم:', videoError);
+                        
+                        const result = {
+                            status: 'upcoming',
+                            streamTitle: upcomingStream.snippet.title,
+                            streamThumbnail: upcomingStream.snippet.thumbnails.medium?.url,
+                            streamUrl: `https://www.youtube.com/watch?v=${upcomingStream.id.videoId}`
+                        };
+                        
+                        setCachedData(cacheKey, result);
+                        return result;
                     }
-                    
-                    return {
-                        status: 'upcoming',
-                        streamTitle: upcomingStream.snippet.title,
-                        streamThumbnail: upcomingStream.snippet.thumbnails.medium?.url,
-                        streamUrl: `https://www.youtube.com/watch?v=${upcomingStream.id.videoId}`
-                    };
                 }
                 
-                return { status: 'offline' };
+                const result = { status: 'offline' };
+                setCachedData(cacheKey, result);
+                return result;
                 
             } catch (error) {
                 console.error('خطأ عام في البث المباشر:', error);
@@ -1071,7 +1226,7 @@
             }
         }
         
-        // تحميل القنوات
+        // تحميل القنوات مع التحديث التدريجي
         async function loadChannels() {
             if (isLoading) return;
             isLoading = true;
@@ -1094,17 +1249,29 @@
                 if (!snapshot.empty) {
                     console.log(`تم العثور على ${snapshot.docs.length} قناة`);
                     
-                    // معالجة القنوات بشكل متتالي لتجنب تجاوز حدود API
-                    for (let doc of snapshot.docs) {
-                        const channelData = { id: doc.id, ...doc.data() };
-                        const processedChannel = await processChannel(channelData);
-                        channels.push(processedChannel);
+                    // معالجة القنوات بشكل متدرج لتوفير API
+                    const channelDocs = snapshot.docs;
+                    const batchSize = 3; // معالجة 3 قنوات في كل مرة
+                    
+                    for (let i = 0; i < channelDocs.length; i += batchSize) {
+                        const batch = channelDocs.slice(i, i + batchSize);
+                        
+                        // معالجة المجموعة الحالية
+                        const batchPromises = batch.map(async (doc) => {
+                            const channelData = { id: doc.id, ...doc.data() };
+                            return await processChannel(channelData);
+                        });
+                        
+                        const processedChannels = await Promise.all(batchPromises);
+                        channels.push(...processedChannels);
                         
                         // تحديث العرض تدريجياً
                         applyFilters();
                         
-                        // توقف قصير بين الطلبات
-                        await new Promise(resolve => setTimeout(resolve, 100));
+                        // توقف بين المجموعات لتجنب تجاوز حدود API
+                        if (i + batchSize < channelDocs.length) {
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                        }
                     }
                 } else {
                     console.log('لا توجد قنوات في قاعدة البيانات');
@@ -1123,7 +1290,7 @@
             }
         }
         
-        // معالجة قناة واحدة
+        // معالجة قناة واحدة مع إدارة API
         async function processChannel(channelData) {
             try {
                 const channelInfo = extractChannelId(channelData.url);
@@ -1143,8 +1310,12 @@
                         const liveData = await fetchLiveStreamData(apiChannelData.id);
                         Object.assign(channelData, liveData);
                     } else {
-                        channelData.status = 'error';
-                        channelData.error = 'فشل في جلب بيانات القناة';
+                        channelData.status = channelData.status || 'offline';
+                        if (!checkApiLimits()) {
+                            channelData.error = 'تم الوصول لحد API';
+                        } else {
+                            channelData.error = 'فشل في جلب بيانات القناة';
+                        }
                     }
                 } else {
                     // استخدام البيانات المحفوظة
@@ -1241,7 +1412,7 @@
             });
         }
         
-        // إنشاء عنصر القناة
+        // إنشاء عنصر القناة مع تحسين العرض
         function createChannelElement(channel) {
             const div = document.createElement('div');
             div.className = `channel-card ${currentView === 'list' ? 'list-view' : ''}`;
@@ -1358,7 +1529,7 @@
             `;
         }
         
-        // تحديث القنوات
+        // تحديث القنوات مع إدارة API
         async function refreshChannels() {
             const refreshBtn = document.getElementById('refreshBtn');
             const icon = refreshBtn.querySelector('i');
@@ -1371,6 +1542,8 @@
             text.textContent = 'جاري التحديث...';
             
             try {
+                // مسح الكاش القديم
+                channelCache.clear();
                 await loadChannels();
             } finally {
                 refreshBtn.disabled = false;
@@ -1522,18 +1695,68 @@
                 
                 console.log('تم تهيئة التطبيق بنجاح');
                 
-                // تحديث دوري كل 3 دقائق
+                // تحديث دوري كل 5 دقائق (بدلاً من 3 لتوفير API)
                 setInterval(async () => {
-                    if (!isLoading) {
+                    if (!isLoading && checkApiLimits()) {
                         console.log('تحديث دوري...');
-                        await loadChannels();
+                        // تحديث القنوات النشطة فقط
+                        await loadActiveChannels();
                     }
-                }, 180000);
+                }, 300000); // 5 دقائق
+                
+                // تنظيف الكاش كل 10 دقائق
+                setInterval(() => {
+                    cleanCache();
+                }, 600000); // 10 دقائق
                 
             } catch (error) {
                 console.error('خطأ في تهيئة التطبيق:', error);
                 showError('فشل في تهيئة التطبيق. يرجى إعادة تحميل الصفحة.');
             }
+        }
+        
+        // تحديث القنوات النشطة فقط
+        async function loadActiveChannels() {
+            try {
+                const activeChannels = channels.filter(ch => 
+                    ch.status === 'live' || ch.status === 'upcoming'
+                );
+                
+                if (activeChannels.length === 0) return;
+                
+                console.log(`تحديث ${activeChannels.length} قناة نشطة...`);
+                
+                for (const channel of activeChannels) {
+                    if (!checkApiLimits()) break;
+                    
+                    const updatedChannel = await processChannel(channel);
+                    const index = channels.findIndex(ch => ch.id === channel.id);
+                    if (index !== -1) {
+                        channels[index] = updatedChannel;
+                    }
+                    
+                    // توقف قصير بين التحديثات
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                
+                applyFilters();
+                updateLastUpdated();
+                
+            } catch (error) {
+                console.error('خطأ في تحديث القنوات النشطة:', error);
+            }
+        }
+        
+        // تنظيف الكاش المنتهي الصلاحية
+        function cleanCache() {
+            const now = Date.now();
+            for (const [key, value] of channelCache.entries()) {
+                const expiry = value.expiry || cacheExpiry;
+                if (now - value.timestamp > expiry) {
+                    channelCache.delete(key);
+                }
+            }
+            console.log(`تم تنظيف الكاش. العناصر المتبقية: ${channelCache.size}`);
         }
         
         // بدء التطبيق عند تحميل الصفحة
