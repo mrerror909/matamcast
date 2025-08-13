@@ -1,286 +1,582 @@
-// دوال سجل النشاط الإضافية
-        async function exportAuditLog() {
-            try {
-                const exportData = {
-                    metadata: {
-                        exportDate: new Date().toISOString(),
-                        totalEntries: auditLog.length,
-                        sessionId: window.sessionId,
-                        version: '2.0'
-                    },
-                    entries: auditLog.map(entry => ({
-                        ...entry,
-                        timestamp: entry.timestamp.toISOString ? entry.timestamp.toISOString() : entry.timestamp
-                    }))
-                };
-                
-                const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
-                    type: 'application/json' 
-                });
-                const url = URL.createObjectURL(blob);
-                
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `audit-log-${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-                
-                addAuditEntry('تصدير سجل النشاط', `تم تصدير ${auditLog.length} حدث`);
-                showNotification('تم تصدير سجل النشاط', 'success');
-                logDebug('success', '📊 تم تصدير سجل النشاط');
-            } catch (error) {
-                console.error('خطأ في تص        // النظام الذكي لإدارة الـ API
-        function initSmartApiSystem() {
-            // حساب أولويات القنوات
-            calculateChannelPriorities();
-            
-            // جدولة التحديثات الذكية
-            if (smartApiEnabled && apiCallCount < 950) {
-                scheduleSmartUpdates();
-            }
-            
-            logDebug('success', '🧠 تم تفعيل النظام الذكي لإدارة API');
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم الإدارية المحسنة — القنوات الذكية</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* —————————— نفس النمط الأساسي مع تحسينات طفيفة —————————— */
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:linear-gradient(135deg,#2c3e50 0%,#3498db 100%); min-height:100vh; }
+        .login-container{ display:flex; justify-content:center; align-items:center; min-height:100vh; padding:20px; }
+        .login-card{ background:rgba(255,255,255,.95); padding:40px; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,.3); text-align:center; max-width:400px; width:100%; }
+        .login-icon{ font-size:3rem; color:#3498db; margin-bottom:20px; }
+        .login-title{ font-size:1.8rem; color:#2c3e50; margin-bottom:10px; }
+        .login-subtitle{ color:#666; margin-bottom:30px; }
+        .form-group{ margin-bottom:20px; position:relative; }
+        .form-input{ width:100%; padding:15px 20px 15px 50px; border:2px solid #ecf0f1; border-radius:25px; font-size:1rem; transition:all .3s ease; }
+        .form-input:focus{ outline:none; border-color:#3498db; box-shadow:0 0 10px rgba(52,152,219,.3); }
+        .input-icon{ position:absolute; left:18px; top:50%; transform:translateY(-50%); color:#bdc3c7; }
+        .login-btn{ background:linear-gradient(45deg,#3498db,#2980b9); border:none; padding:15px 40px; border-radius:25px; color:#fff; font-weight:600; font-size:1rem; cursor:pointer; transition:all .3s ease; width:100%; }
+        .login-btn:hover{ transform:translateY(-2px); box-shadow:0 5px 15px rgba(52,152,219,.4); }
+
+        .admin-panel{ display:none; padding:0; background:#f8f9fa; }
+        .admin-navbar{ background:rgba(255,255,255,.95); padding:20px 0; box-shadow:0 2px 20px rgba(0,0,0,.1); position:sticky; top:0; z-index:1000; }
+        .nav-container{ max-width:1400px; margin:0 auto; padding:0 20px; display:flex; justify-content:space-between; align-items:center; }
+        .admin-logo{ display:flex; align-items:center; gap:10px; color:#2c3e50; font-size:1.5rem; font-weight:bold; }
+        .nav-actions{ display:flex; gap:10px; align-items:center; }
+        .debug-toggle{ background:linear-gradient(45deg,#9b59b6,#8e44ad); border:none; padding:10px 20px; border-radius:20px; color:#fff; font-weight:600; cursor:pointer; transition:all .3s ease; position:relative; }
+        .debug-toggle:hover{ transform:translateY(-2px); box-shadow:0 4px 12px rgba(155,89,182,.4); }
+        .debug-toggle.active{ background:linear-gradient(45deg,#e67e22,#d35400); box-shadow:0 4px 12px rgba(230,126,34,.4); }
+        .debug-indicator{ position:absolute; top:-5px; right:-5px; background:#e74c3c; color:#fff; border-radius:50%; width:20px; height:20px; font-size:12px; display:none; align-items:center; justify-content:center; }
+        .debug-toggle.active .debug-indicator{ display:flex; animation:pulse 2s infinite; }
+        @keyframes pulse{ 0%{opacity:1} 50%{opacity:.5} 100%{opacity:1} }
+        .logout-btn{ background:linear-gradient(45deg,#e74c3c,#c0392b); border:none; padding:10px 20px; border-radius:20px; color:#fff; font-weight:600; cursor:pointer; transition:all .3s ease; }
+        .logout-btn:hover{ transform:translateY(-2px); }
+        .admin-container{ max-width:1400px; margin:0 auto; padding:40px 20px; }
+
+        /* لوحة التصحيح */
+        .debug-panel{ background:rgba(26,32,46,.95); color:#00ff88; border:2px solid #00ff88; border-radius:15px; padding:20px; margin-bottom:30px; font-family:'Courier New', monospace; font-size:.9rem; display:none; max-height:500px; overflow-y:auto; backdrop-filter:blur(10px); }
+        .debug-panel.show{ display:block; animation:slideDown .3s ease; }
+        @keyframes slideDown{ from{opacity:0; transform:translateY(-20px)} to{opacity:1; transform:translateY(0)} }
+        .debug-header{ background:linear-gradient(45deg,#00ff88,#00cc6a); color:#1a202e; padding:15px 20px; margin:-20px -20px 20px -20px; border-radius:12px 12px 0 0; font-weight:bold; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+        .debug-controls{ display:flex; gap:10px; }
+        .debug-btn{ background:rgba(26,32,46,.8); color:#00ff88; border:1px solid #00ff88; padding:5px 10px; border-radius:5px; cursor:pointer; font-size:.8rem; }
+        .debug-btn:hover{ background:rgba(0,255,136,.1); }
+        .debug-section{ margin-bottom:20px; padding:15px; background:rgba(0,255,136,.1); border-radius:8px; border-left:4px solid #00ff88; }
+        .debug-title{ color:#00ff88; font-weight:bold; margin-bottom:10px; display:flex; align-items:center; gap:8px; font-size:1rem; }
+        .debug-content{ color:#b8e6d1; line-height:1.6; }
+        .debug-error{ color:#ff6b6b; background:rgba(255,107,107,.1); padding:5px 10px; border-radius:4px; margin:2px 0; }
+        .debug-warning{ color:#ffa726; background:rgba(255,167,38,.1); padding:5px 10px; border-radius:4px; margin:2px 0; }
+        .debug-success{ color:#4caf50; background:rgba(76,175,80,.1); padding:5px 10px; border-radius:4px; margin:2px 0; }
+        .api-monitor{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:15px; margin-bottom:15px; }
+        .api-stat{ background:rgba(0,255,136,.1); padding:15px; border-radius:8px; text-align:center; border:1px solid rgba(0,255,136,.3); }
+        .api-stat-number{ font-size:1.8rem; font-weight:bold; color:#00ff88; }
+        .api-stat-label{ font-size:.8rem; color:#b8e6d1; margin-top:8px; }
+        .api-quota-warning{ background:rgba(255,193,7,.1); border-left:4px solid #ffc107; padding:15px; border-radius:8px; color:#ffc107; margin-bottom:15px; }
+        .api-quota-danger{ background:rgba(220,53,69,.1); border-left:4px solid #dc3545; padding:15px; border-radius:8px; color:#dc3545; margin-bottom:15px; }
+        .cache-info{ background:rgba(0,123,255,.1); border-left:4px solid #007bff; padding:15px; border-radius:8px; color:#007bff; margin-bottom:15px; }
+
+        /* بطاقات وإطارات */
+        .stats-overview{ display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:25px; margin-bottom:40px; }
+        .stat-card{ background:#fff; padding:30px; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,.1); text-align:center; transition:transform .3s ease; }
+        .stat-card:hover{ transform:translateY(-5px); }
+        .stat-icon{ font-size:2.5rem; margin-bottom:15px; }
+        .stat-number{ font-size:2.2rem; font-weight:bold; margin-bottom:8px; }
+        .stat-label{ color:#666; font-size:1rem; }
+        .section-card{ background:#fff; border-radius:15px; box-shadow:0 5px 20px rgba(0,0,0,.1); margin-bottom:30px; overflow:hidden; }
+        .section-header{ background:linear-gradient(45deg,#667eea,#764ba2); color:#fff; padding:25px 30px; display:flex; align-items:center; justify-content:space-between; }
+        .section-title-group{ display:flex; align-items:center; gap:15px; }
+        .section-title{ font-size:1.4rem; font-weight:600; }
+        .section-actions{ display:flex; gap:10px; }
+        .header-btn{ background:rgba(255,255,255,.2); border:none; padding:8px 16px; border-radius:20px; color:#fff; font-weight:600; cursor:pointer; transition:all .3s ease; display:flex; align-items:center; gap:5px; }
+        .header-btn:hover{ background:rgba(255,255,255,.3); }
+        .header-btn:disabled{ opacity:.5; cursor:not-allowed; }
+        .section-content{ padding:30px; }
+
+        /* إضافة القنوات الذكية */
+        .smart-add{ background:#f8f9fa; border-radius:12px; padding:18px; margin-bottom:20px; border:2px dashed #e9ecef; }
+        .smart-add .help{ font-size:.9rem; color:#6c757d; margin-top:8px; }
+        .smart-row{ display:grid; grid-template-columns:1fr auto; gap:12px; }
+        .smart-input{ padding:12px 14px; border:2px solid #e9ecef; border-radius:10px; font-size:.95rem; }
+        .smart-input:focus{ outline:none; border-color:#667eea; }
+        .btn-smart{ background:linear-gradient(45deg,#27ae60,#2ecc71); border:none; padding:12px 20px; border-radius:10px; color:#fff; font-weight:700; cursor:pointer; }
+        .smart-badges{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+        .smart-badge{ background:#eef2ff; color:#4f46e5; border:1px solid #c7d2fe; padding:6px 10px; border-radius:999px; font-size:.8rem; }
+        .saving-mode{ display:inline-flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px; background:rgba(255,193,7,.12); color:#a86a00; border:1px solid #ffd35c; margin-top:8px; }
+
+        /* شبكة القنوات */
+        .channels-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(350px,1fr)); gap:20px; }
+        .item-card{ background:#f8f9fa; border:1px solid #e9ecef; border-radius:10px; padding:20px; transition:all .3s ease; position:relative; }
+        .item-card:hover{ transform:translateY(-2px); box-shadow:0 5px 15px rgba(0,0,0,.1); }
+        .item-card.dragging{ opacity:.5; transform:rotate(5deg); }
+        .item-card.cached::before{ content:'💾'; position:absolute; top:10px; left:10px; font-size:1.2rem; opacity:.7; }
+        .drag-handle{ position:absolute; top:10px; right:10px; color:#bdc3c7; cursor:grab; font-size:1.2rem; }
+        .drag-handle:hover{ color:#667eea; }
+        .drag-handle:active{ cursor:grabbing; }
+        .item-header{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px; padding-right:30px; }
+        .item-info{ flex:1; }
+        .item-name{ font-size:1.2rem; font-weight:600; color:#2c3e50; margin-bottom:5px; }
+        .item-url{ color:#3498db; text-decoration:none; font-size:.9rem; word-break:break-all; }
+        .item-url:hover{ text-decoration:underline; }
+        .item-timestamp{ font-size:.8rem; color:#95a5a6; margin-top:5px; }
+        .item-status{ display:inline-block; padding:4px 12px; border-radius:15px; font-size:.8rem; font-weight:600; margin-top:10px; }
+        .status-live{ background:#e74c3c; color:#fff; }
+        .status-upcoming{ background:#f39c12; color:#fff; }
+        .status-offline{ background:#95a5a6; color:#fff; }
+        .status-error{ background:#e67e22; color:#fff; }
+        .item-actions{ display:flex; gap:10px; flex-wrap:wrap; margin-top:15px; }
+        .btn{ padding:8px 16px; border:none; border-radius:20px; font-weight:600; font-size:.85rem; cursor:pointer; transition:all .3s ease; display:inline-flex; align-items:center; gap:5px; }
+        .btn-delete{ background:linear-gradient(45deg,#e74c3c,#c0392b); color:#fff; }
+        .status-selector{ padding:8px 15px; border:2px solid #ecf0f1; border-radius:20px; font-size:.9rem; background:#fff; color:#2c3e50; cursor:pointer; }
+
+        /* إعدادات الموقع + API (كما كانت) */
+        .settings-grid{ display:grid; grid-template-columns:1fr auto; gap:15px; align-items:center; margin-bottom:20px; }
+        .settings-input{ width:100%; padding:15px 20px; border:2px solid #ecf0f1; border-radius:25px; font-size:1rem; transition:all .3s ease; }
+        .settings-input:focus{ outline:none; border-color:#3498db; box-shadow:0 0 10px rgba(52,152,219,.2); }
+        .test-api-btn{ background:linear-gradient(45deg,#f39c12,#e67e22); color:#fff; border:none; padding:10px 20px; border-radius:20px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:8px; }
+
+        /* لوحة سجل النشاط */
+        .audit-full{ display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:2000; align-items:center; justify-content:center; padding:24px; }
+        .audit-card{ max-width:1000px; width:100%; background:#fff; border-radius:14px; overflow:hidden; box-shadow:0 30px 80px rgba(0,0,0,.35); }
+        .audit-head{ background:linear-gradient(45deg,#0ea5e9,#6366f1); color:#fff; padding:18px 20px; display:flex; align-items:center; justify-content:space-between; }
+        .audit-actions{ display:flex; gap:10px; }
+        .audit-table{ width:100%; border-collapse:collapse; }
+        .audit-table th,.audit-table td{ padding:10px 12px; border-bottom:1px solid #eef2f7; text-align:right; font-size:.92rem; }
+        .audit-table th{ background:#f8fafc; font-weight:700; }
+        .audit-body{ max-height:60vh; overflow:auto; }
+        .badge{ padding:4px 10px; border-radius:999px; font-size:.8rem; font-weight:700; }
+        .b-add{ background:#dcfce7; color:#166534; }
+        .b-del{ background:#fee2e2; color:#991b1b; }
+        .b-edit{ background:#dbeafe; color:#1e40af; }
+        .b-login{ background:#fff7ed; color:#9a3412; }
+        .b-clear{ background:#fef3c7; color:#92400e; }
+        .group-date{ background:#f1f5f9; color:#334155; font-weight:700; padding:6px 10px; border-radius:8px; margin:10px 0; display:inline-block; }
+
+        .notification{ position:fixed; top:20px; right:20px; padding:15px 20px; border-radius:10px; color:#fff; font-weight:600; z-index:3000; transform:translateX(100%); transition:transform .3s ease; max-width:400px; }
+        .notification.show{ transform:translateX(0); }
+        .notification.success{ background:linear-gradient(45deg,#27ae60,#2ecc71); }
+        .notification.error{ background:linear-gradient(45deg,#e74c3c,#c0392b); }
+        .notification.warning{ background:linear-gradient(45deg,#f39c12,#e67e22); }
+
+        .loading{ text-align:center; padding:40px; color:#7f8c8d; }
+        .spinner{ border:3px solid rgba(127,140,141,.3); border-radius:50%; border-top:3px solid #7f8c8d; width:40px; height:40px; animation:spin 1s linear infinite; margin:0 auto 20px auto; }
+        @keyframes spin{ 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+
+        @media (max-width: 768px){
+            .stats-overview{ grid-template-columns:repeat(2,1fr); }
+            .settings-grid{ grid-template-columns:1fr; }
+            .item-actions{ flex-direction:column; }
+            .admin-container{ padding:20px 15px; }
+            .nav-actions{ flex-direction:column; gap:5px; }
+            .channels-grid{ grid-template-columns:1fr; }
+            .api-monitor{ grid-template-columns:repeat(2,1fr); }
+            .smart-row{ grid-template-columns:1fr; }
         }
-        
-        function calculateChannelPriorities() {
-            channelPriorities.clear();
-            
-            channels.forEach(channel => {
-                let priority = 0;
-                
-                // أولوية حسب الحالة
-                if (channel.status === 'live') priority += 100;
-                else if (channel.status === 'upcoming') priority += 50;
-                
-                // أولوية للقنوات التي تحتاج تحديث
-                if (channel.needsApiUpdate) priority += 30;
-                
-                // أولوية حسب آخر تحديث
-                if (channel.lastUpdated) {
-                    const daysSinceUpdate = (Date.now() - channel.lastUpdated.toDate().getTime()) / (1000 * 60 * 60 * 24);
-                    if (daysSinceUpdate > 1) priority += Math.min(daysSinceUpdate * 5, 25);
-                }
-                
-                // أولوية للقنوات الشائعة
-                if (channel.subscriberCount) {
-                    const subs = parseInt(channel.subscriberCount);
-                    if (subs > 1000000) priority += 20; // مليون+
-                    else if (subs > 100000) priority += 10; // 100K+
-                    else if (subs > 10000) priority += 5; // 10K+
-                }
-                
-                channelPriorities.set(channel.id, priority);
-            });
-            
-            logDebug('success', `🎯 تم حساب أولويات ${channelPriorities.size} قناة`);
-        }
-        
-        async function scheduleSmartUpdates() {
-            if (apiCallCount > 900) {
-                logDebug('warning', '⚠ تم إيقاف التحديثات الذكية - حصة API منخفضة');
-                return;
-            }
-            
-            // ترتيب القنوات حسب الأولوية
-            const sortedChannels = [...channels].sort((a, b) => {
-                return (channelPriorities.get(b.id) || 0) - (channelPriorities.get(a.id) || 0);
-            });
-            
-            // تحديث أهم 5-10 قنوات
-            const channelsToUpdate = sortedChannels.slice(0, Math.min(10, Math.floor((1000 - apiCallCount) / 5)));
-            
-            if (channelsToUpdate.length > 0) {
-                logDebug('success', `🔄 جدولة تحديث ذكي لـ ${channelsToUpdate.length} قناة`);
-                
-                const apiKey = await getApiKey();
-                if (apiKey) {
-                    for (let channel of channelsToUpdate) {
-                        if (apiCallCount > 950) break;
-                        
-                        try {
-                            await updateChannelFromAPI(channel, apiKey);
-                            await new Promise(resolve => setTimeout(resolve, 200)); // تأخير بين الطلبات
-                        } catch (error) {
-                            logDebug('error', `✗ فشل تحديث قناة: ${error.message}`);
-                        }
-                    }
-                }
-            }
-            
-            lastSmartUpdate = Date.now();
-        }
-        
-        function updateSmartApiDisplay() {
-            const smartApiStatus = document.getElementById('smartApiStatus');
-            if (!smartApiStatus || !debugMode) return;
-            
-            const nextUpdateIn = Math.max(0, Math.ceil((lastSmartUpdate + 300000 - Date.now()) / 60000)); // 5 دقائق
-            const highPriorityChannels = [...channelPriorities.entries()]
-                .filter(([id, priority]) => priority > 50)
-                .length;
-            
-            const apiBudget = Math.max(0, 1000 - apiCallCount);
-            const estimatedUpdates = Math.floor(apiBudget / 5);
-            
-            let statusColor = 'debug-success';
-            let statusIcon = '🟢';
-            let statusText = 'مثالي';
-            
-            if (apiCallCount > 900) {
-                statusColor = 'debug-error';
-                statusIcon = '🔴';
-                statusText = 'متوقف - حصة منخفضة';
-            } else if (apiCallCount > 800) {
-                statusColor = 'debug-warning';
-                statusIcon = '🟡';
-                statusText = 'محذر - استهلاك عالي';
-            }
-            
-            smartApiStatus.innerHTML = `
-                <div class="${statusColor}">
-                    ${statusIcon} حالة النظام: ${statusText}
+    </style>
+</head>
+<body>
+    <div id="loginContainer" class="login-container">
+        <div class="login-card">
+            <div class="login-icon"><i class="fas fa-shield-alt"></i></div>
+            <h2 class="login-title">لوحة التحكم</h2>
+            <p class="login-subtitle">قم بتسجيل الدخول للوصول إلى الإدارة</p>
+            <div class="form-group">
+                <input type="password" id="adminPass" class="form-input" placeholder="كلمة المرور">
+                <i class="fas fa-lock input-icon"></i>
+            </div>
+            <button class="login-btn" onclick="login()"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</button>
+        </div>
+    </div>
+
+    <div id="adminPanel" class="admin-panel">
+        <nav class="admin-navbar">
+            <div class="nav-container">
+                <div class="admin-logo"><i class="fas fa-cogs"></i><span>لوحة التحكم الإدارية</span></div>
+                <div class="nav-actions">
+                    <button class="header-btn" onclick="openAuditFull()"><i class="fas fa-clipboard-list"></i> سجل النشاط</button>
+                    <button class="debug-toggle" onclick="toggleDebug()" title="تفعيل/إلغاء وضع التصحيح"><i class="fas fa-bug"></i> وضع التصحيح <div class="debug-indicator">!</div></button>
+                    <button class="logout-btn" onclick="logout()"><i class="fas fa-sign-out-alt"></i> خروج</button>
                 </div>
+            </div>
+        </nav>
+
+        <div class="admin-container">
+            <!-- لوحة التصحيح المتقدمة -->
+            <div class="debug-panel" id="debugPanel">
+                <div class="debug-header">
+                    <div style="display:flex; align-items:center; gap:10px;"><i class="fas fa-terminal"></i> وضع التصحيح النشط</div>
+                    <div class="debug-controls">
+                        <button class="debug-btn" onclick="clearCache()" title="مسح الكاش"><i class="fas fa-trash"></i> مسح الكاش</button>
+                        <button class="debug-btn" onclick="clearDebugLog()" title="مسح السجل"><i class="fas fa-eraser"></i> مسح السجل</button>
+                        <button class="debug-btn" onclick="exportDebugData()" title="تصدير البيانات"><i class="fas fa-download"></i> تصدير</button>
+                    </div>
+                </div>
+                <div class="debug-section">
+                    <div class="debug-title"><i class="fas fa-chart-line"></i> مراقب YouTube API المتقدم</div>
+                    <div id="apiQuotaWarning"></div>
+                    <div class="api-monitor" id="apiMonitor">
+                        <div class="api-stat"><div class="api-stat-number" id="apiCallsCount">0</div><div class="api-stat-label">طلبات مستخدمة</div></div>
+                        <div class="api-stat"><div class="api-stat-number" id="apiQuotaRemaining">1000</div><div class="api-stat-label">حصة متبقية</div></div>
+                        <div class="api-stat"><div class="api-stat-number" id="cacheHitRate">0%</div><div class="api-stat-label">معدل الكاش</div></div>
+                        <div class="api-stat"><div class="api-stat-number" id="cacheSizeDisplay">0</div><div class="api-stat-label">عناصر الكاش</div></div>
+                    </div>
+                    <div class="debug-content" id="priorityPreview"></div>
+                </div>
+                <div class="debug-section">
+                    <div class="debug-title"><i class="fas fa-database"></i> نظام التخزين المؤقت الذكي</div>
+                    <div class="debug-content" id="cacheStatus">جاري تحميل معلومات الكاش...</div>
+                </div>
+                <div class="debug-section">
+                    <div class="debug-title"><i class="fas fa-memory"></i> حالة النظام</div>
+                    <div class="debug-content" id="systemStatus">جاري تحميل معلومات النظام...</div>
+                </div>
+                <div class="debug-section">
+                    <div class="debug-title"><i class="fas fa-history"></i> سجل الأحداث المباشر</div>
+                    <div class="debug-content" id="debugLog"><div class="debug-success">✓ تم تفعيل وضع التصحيح المتقدم</div></div>
+                </div>
+            </div>
+
+            <div class="stats-overview" id="statsOverview"></div>
 
             <div class="section-card">
                 <div class="section-header">
-                    <div class="section-title-group">
-                        <i class="fas fa-cog"></i>
-                        <h3 class="section-title">إعدادات YouTube API</h3>
+                    <div class="section-title-group"><i class="fas fa-inbox"></i><h3 class="section-title">طلبات إضافة القنوات</h3></div>
+                </div>
+                <div class="section-content">
+                    <div id="requestsLoading" class="loading"><div class="spinner"></div><p>جاري تحميل الطلبات...</p></div>
+                    <div id="requests"></div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-title-group"><i class="fas fa-tv"></i><h3 class="section-title">إدارة القنوات</h3></div>
+                    <div class="section-actions">
+                        <button class="header-btn" onclick="toggleQuickAdd()"><i class="fas fa-plus"></i> إضافة سريعة</button>
+                        <button class="header-btn" onclick="refreshChannelData()" id="refreshBtn"><i class="fas fa-sync-alt"></i> تحديث البيانات</button>
+                        <button class="header-btn" onclick="optimizeChannels()" id="optimizeBtn"><i class="fas fa-magic"></i> تحسين تلقائي</button>
                     </div>
                 </div>
                 <div class="section-content">
-                    <div class="settings-grid">
-                        <input type="text" id="ytKey" class="settings-input" placeholder="YouTube API Key">
-                        <button class="btn btn-save" onclick="saveKey()">
-                            <i class="fas fa-save"></i>
-                            حفظ
-                        </button>
+                    <!-- 🎯 إضافة القنوات الذكية -->
+                    <div class="smart-add">
+                        <div class="smart-row">
+                            <input type="text" id="smartChannelInput" class="smart-input" placeholder="ألصِق رابط/اكتب @معرّف/ UCxxxx / اسم مخصص">
+                            <button class="btn-smart" onclick="addSmartChannel()"><i class="fas fa-plus"></i> إضافة قناة</button>
+                        </div>
+                        <div class="help">إدخال مرن: رابط كامل | @اسم المستخدم | معرف القناة UC | اسم مخصّص. <span id="savingModeBadge" class="saving-mode" style="display:none;"><i class="fas fa-leaf"></i> وضع توفير مفعّل: الإضافة بدون معلومات ويتم التحديث لاحقًا</span></div>
+                        <div class="smart-badges">
+                            <span class="smart-badge">تعرف تلقائي</span>
+                            <span class="smart-badge">تحديث ذكي حسب الأولوية</span>
+                            <span class="smart-badge">توزيع حمل كل 5 دقائق</span>
+                        </div>
                     </div>
-                    <div class="settings-grid">
-                        <div></div>
-                        <button class="test-api-btn" onclick="testYouTubeAPI()">
-                            <i class="fas fa-flask"></i>
-                            اختبار API
-                        </button>
+
+                    <!-- نموذج الإضافة السريعة القديم يبقى متاحًا -->
+                    <div class="quick-add-form" id="quickAddForm">
+                        <div class="smart-row">
+                            <input type="text" id="quickChannelName" class="smart-input" placeholder="اسم القناة">
+                            <button class="btn-smart" onclick="addChannelQuick()"><i class="fas fa-plus"></i> إضافة</button>
+                        </div>
+                        <div class="help">يمكنك أيضًا استخدام الحقل الذكي أعلاه لإدخال أي صيغة.</div>
                     </div>
+
+                    <div class="loading" id="channelsLoading"><div class="spinner"></div><p>جاري تحميل القنوات...</p></div>
+                    <div class="channels-grid" id="channels"></div>
                 </div>
             </div>
-                <div class="debug-success">🎯 قنوات عالية الأولوية: ${highPriorityChannels}</div>
-                <div class="debug-success">💰 ميزانية API متبقية: ${apiBudget} (≈${estimatedUpdates} تحديث)</div>
-                <div class="debug-success">⏰ التحديث التالي خلال: ${nextUpdateIn} دقيقة</div>
-                <div class="debug-success">🔄 آخر تحديث ذكي: ${lastSmartUpdate ? formatTimeAgo(lastSmartUpdate) : 'لم يتم بعد'}</div>
-            `;
-        }
-        
-        function formatTimeAgo(timestamp) {
-            const minutes = Math.floor((Date.now() - timestamp) / 60000);
-            if (minutes < 1) return 'الآن';
-            if (minutes < 60) return `${minutes} دقيقة`;
-            const hours = Math.floor(minutes / 60);
-            return `${hours} ساعة`;
-        }
-        
-        // تحسين مراقب API ليشمل التنبيهات الذكية
-        function updateApiMonitor() {
-            if (!debugMode) return;
-            
-            const now = Date.now();
-            
-            // إعادة تعيين العداد كل ساعة
-            if (now - lastApiReset > 3600000) {
-                apiCallCount = 0;
-                lastApiReset = now;
-                logDebug('success', '🔄 تم إعادة تعيين عداد API (ساعة جديدة)');
-                addAuditEntry('إعادة تعيين API', 'بداية ساعة جديدة');
-            }
-            
-            const remaining = Math.max(0, 1000 - apiCallCount);
-            const hitRate = totalRequests > 0 ? Math.round((cacheHits / totalRequests) * 100) : 0;
-            
-            // تحديث الأرقام
-            document.getElementById('apiCallsCount').textContent = apiCallCount;
-            document.getElementById('apiQuotaRemaining').textContent = remaining;
-            document.getElementById('cacheHitRate').textContent = hitRate + '%';
-            document.getElementById('cacheSizeDisplay').textContent = cacheStats.size;
-            
-            // تحديث ألوان المؤشرات
-            const callsElement = document.getElementById('apiCallsCount');
-            const remainingElement = document.getElementById('apiQuotaRemaining');
-            
-            // إشارات تحذيرية للحصة مع اقتراحات ذكية
-            const warningDiv = document.getElementById('apiQuotaWarning');
-            warningDiv.innerHTML = '';
-            
-            if (apiCallCount > 950) {
-                callsElement.style.color = '#dc3545';
-                remainingElement.style.color = '#dc3545';
-                warningDiv.innerHTML = `
-                    <div class="api-quota-danger">
-                        <i class="fas fa-exclamation-triangle"></i> 
-                        <strong>تحذير حرج:</strong> وشك نفاد حصة API!
-                        <br><small>💡 الحلول: انتظار الساعة القادمة، الاعتماد على الكاش، أو استخدام مفتاح API إضافي</small>
+
+            <div class="section-card">
+                <div class="section-header"><div class="section-title-group"><i class="fas fa-palette"></i><h3 class="section-title">إعدادات الموقع</h3></div></div>
+                <div class="section-content">
+                    <div class="settings-grid"><input type="text" id="siteName" class="settings-input" placeholder="اسم الموقع"><button class="btn test-api-btn" onclick="saveSiteSettings()"><i class="fas fa-save"></i> حفظ</button></div>
+                    <div class="settings-grid"><input type="text" id="siteDescription" class="settings-input" placeholder="وصف الموقع"></div>
+                    <div class="settings-grid">
+                        <div class="file-input-wrapper"><input type="file" id="siteLogo" class="file-input" accept="image/*" onchange="handleLogoUpload(this)"><label for="siteLogo" class="header-btn"><i class="fas fa-upload"></i> رفع شعار الموقع</label></div>
                     </div>
-                `;
-                disableApiFeatures(true);
-                smartApiEnabled = false;
-            } else if (apiCallCount > 800) {
-                callsElement.style.color = '#ffc107';
-                remainingElement.style.color = '#ffc107';
-                const estimatedTime = Math.ceil((1000 - apiCallCount) / 10); // تقدير الوقت المتبقي بالدقائق
-                warningDiv.innerHTML = `
-                    <div class="api-quota-warning">
-                        <i class="fas fa-exclamation-circle"></i> 
-                        <strong>تحذير:</strong> حصة API منخفضة (${remaining} متبقية)
-                        <br><small>💡 سيتم التركيز على القنوات        async function addChannelQuick() {
-            const channelInput = document.getElementById('quickChannelUrl').value.trim();
-            
-            if (!channelInput) {
-                showNotification('يرجى إدخال رابط القناة أو المعرف', 'error');
-                logDebug('error', '✗ محاولة إضافة قناة بدون رابط');
-                return;
-            }
-            
-            // تحويل المدخل إلى رابط كامل إذا لزم الأمر
-            const fullUrl = normalizeChannelInput(channelInput);
-            if (!fullUrl) {
-                showNotification('صيغة غير صحيحة. استخدم رابط كامل أو @username أو معرف القناة', 'error');
-                logDebug('error', `✗ صيغة غير صحيحة: ${channelInput}`);
-                return;
-            }
-            
-            try {
-                showNotification('جاري التحقق من القناة...', 'success');
-                logDebug('success', `🔍 جاري البحث عن معلومات القناة: ${channelInput}`);
-                
-                // جلب معلومات القناة من YouTube API
-                const apiKey = await getApiKey();
-                if (!apiKey) {
-                    showNotification('لا يوجد مفتاح YouTube API. سيتم إضافة القناة بدون معلومات', 'warning');
-                    await addChannelWithoutAPI(fullUrl, channelInput);
-                    return;
-                }
-                
-                if (apiCallCount > 950) {
-                    showNotification('حصة API منخفضة. سيتم إضافة القناة بدون معلومات', 'warning');
-                    await addChannelWithoutAPI(fullUrl, channelInput);
-                    return;
-                }
-                
-                const channelData = await fetchChannelDataFromInput(channelInput, apiKey);
-                
-                if (channelData) {
-                    await addChannelWithData(channelData, fullUrl);
-                } else {
-                    await addChannelWithoutAPI(fullUrl, channelInput);
-                }
-                
-                document.getElementById('quickChannelUrl').value = '';
-                
-            } catch (error) {
-                console.error('خطأ في إضافة القناة:', error);
-                logDebug('error', `✗ خطأ في إضافة القناة: ${error.message}`);
-                showNotification('حدث خطأ أثناء إضافة القناة', 'error');
-            }
+                    <div class="settings-grid"><input type="email" id="contactEmail" class="settings-input" placeholder="admin@example.com"><button class="btn test-api-btn" onclick="saveContactSettings()"><i class="fas fa-save"></i> حفظ معلومات التواصل</button></div>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-header"><div class="section-title-group"><i class="fas fa-cog"></i><h3 class="section-title">إعدادات YouTube API</h3></div></div>
+                <div class="section-content">
+                    <div class="settings-grid"><input type="text" id="ytKey" class="settings-input" placeholder="YouTube API Key"><button class="btn test-api-btn" onclick="saveKey()"><i class="fas fa-save"></i> حفظ</button></div>
+                    <div class="settings-grid"><div></div><button class="test-api-btn" onclick="testYouTubeAPI()"><i class="fas fa-flask"></i> اختبار API</button></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة سجل النشاط كاملة -->
+    <div class="audit-full" id="auditFull">
+        <div class="audit-card">
+            <div class="audit-head">
+                <div style="display:flex; align-items:center; gap:10px;"><i class="fas fa-clipboard-list"></i> سجل النشاط (Audit Log)</div>
+                <div class="audit-actions">
+                    <button class="header-btn" onclick="exportAuditJSON()"><i class="fas fa-file-export"></i> تصدير JSON</button>
+                    <button class="header-btn" onclick="confirmClearAudit()"><i class="fas fa-broom"></i> مسح السجل</button>
+                    <button class="header-btn" onclick="closeAuditFull()"><i class="fas fa-times"></i> إغلاق</button>
+                </div>
+            </div>
+            <div class="audit-body">
+                <table class="audit-table">
+                    <thead>
+                        <tr><th>الحدث</th><th>التفاصيل</th><th>المستخدم</th><th>الوقت</th></tr>
+                    </thead>
+                    <tbody id="auditTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+    <script>
+        // ————— تهيئة Firebase (نفس مفاتيح النسخة الأساسية) —————
+        const firebaseConfig = {
+            apiKey: "AIzaSyCNjqLeuj03klcwHbs3jxSIJk1RJ3zcbnc",
+            authDomain: "livematam-5b050.firebaseapp.com",
+            projectId: "livematam-5b050",
+            storageBucket: "livematam-5b050.firebasestorage.app",
+            messagingSenderId: "411694644929",
+            appId: "1:411694644929:web:50681d37ed7e0dd1965e40",
+            measurementId: "G-TE3KKNE1LH"
+        };
+
+        // ————— متغيرات عامة —————
+        let db, storage;
+        const adminPassword = "admin123"; // يمكن تحويلها لاحقًا لمتغير بيئي
+        let requests = []; let channels = []; let siteSettings = {}; let contactSettings = {};
+        let debugMode = false; let draggedElement = null; let isLoggedIn = false;
+
+        // مراقبة API
+        let apiCallCount = 0; let lastApiReset = Date.now(); let cacheHits = 0; let totalRequests = 0; let debugMessages = [];
+
+        // كاش ذكي
+        const CACHE_DURATION = 6 * 60 * 60 * 1000; // 6 ساعات
+        const CACHE_PREFIX = 'yt_cache_';
+        let cacheStats = { size:0, hits:0, misses:0, lastCleanup:Date.now() };
+
+        // أولوية وتحديثات ذكية
+        const UPDATE_INTERVAL_MS = 5 * 60 * 1000; // كل 5 دقائق
+        let schedulerId = null;
+
+        // ————— وظائف أساسية —————
+        function initializeFirebase(){ try { if(!firebase.apps.length){ firebase.initializeApp(firebaseConfig); } db = firebase.firestore(); storage = firebase.storage(); logDebug('success','✓ تم تهيئة Firebase'); initCache(); return true; } catch(e){ logDebug('error',`✗ خطأ Firebase: ${e.message}`); showNotification('خطأ في الاتصال بقاعدة البيانات','error'); return false; } }
+
+        function login(){ const password = document.getElementById('adminPass').value; if(password === adminPassword){ isLoggedIn = true; document.getElementById('loginContainer').style.display='none'; document.getElementById('adminPanel').style.display='block'; loadData(); showNotification('تم تسجيل الدخول بنجاح','success'); logAudit('login','تسجيل دخول ناجح'); updateSystemStatus(); startSmartScheduler(); } else { showNotification('كلمة مرور خاطئة','error'); logDebug('error','✗ محاولة دخول بكلمة مرور خاطئة'); logAudit('login_failed','محاولة دخول بكلمة خاطئة'); }}
+
+        function logout(){ isLoggedIn=false; document.getElementById('loginContainer').style.display='flex'; document.getElementById('adminPanel').style.display='none'; document.getElementById('adminPass').value=''; debugMode=false; document.querySelector('.debug-toggle').classList.remove('active'); document.getElementById('debugPanel').classList.remove('show'); logAudit('logout','تسجيل خروج'); }
+
+        // ————— إشعارات —————
+        function showNotification(text,type='success'){ const n=document.createElement('div'); n.className=`notification ${type}`; n.textContent=text; document.body.appendChild(n); requestAnimationFrame(()=>n.classList.add('show')); setTimeout(()=>{ n.classList.remove('show'); setTimeout(()=>n.remove(),300); }, 3000); }
+
+        // ————— الكاش —————
+        function initCache(){ cleanupExpiredCache(); updateCacheStats(); logDebug('success','✓ تهيئة الكاش'); }
+        function cleanupExpiredCache(){ const now=Date.now(); let cleaned=0; for(let i=localStorage.length-1;i>=0;i--){ const key=localStorage.key(i); if(key && key.startsWith(CACHE_PREFIX)){ try{ const item=JSON.parse(localStorage.getItem(key)); if(item && item.expiry && now>item.expiry){ localStorage.removeItem(key); cleaned++; } }catch{ localStorage.removeItem(key); cleaned++; } } } if(cleaned>0){ logDebug('success',`🧹 تنظيف ${cleaned} عنصر منتهي`); } cacheStats.lastCleanup=now; }
+        function setCache(key,data,dur=CACHE_DURATION){ try{ const item={ data, timestamp:Date.now(), expiry:Date.now()+dur }; localStorage.setItem(CACHE_PREFIX+key, JSON.stringify(item)); updateCacheStats(); logDebug('success',`💾 حفظ في الكاش: ${key}`); }catch(e){ logDebug('error',`✗ حفظ الكاش: ${e.message}`); if(e.name==='QuotaExceededError'){ cleanupExpiredCache(); } } }
+        function getCache(key){ try{ const item=localStorage.getItem(CACHE_PREFIX+key); if(!item){ cacheStats.misses++; return null; } const parsed=JSON.parse(item); if(Date.now()>parsed.expiry){ localStorage.removeItem(CACHE_PREFIX+key); cacheStats.misses++; return null; } cacheStats.hits++; incrementCacheHit(); return parsed.data; }catch{ cacheStats.misses++; return null; } }
+        function updateCacheStats(){ let size=0; for(let i=0;i<localStorage.length;i++){ const key=localStorage.key(i); if(key && key.startsWith(CACHE_PREFIX)) size++; } cacheStats.size=size; }
+        function clearCache(){ if(!confirm('هل أنت متأكد من مسح جميع بيانات الكاش؟')) return; let cleared=0; for(let i=localStorage.length-1;i>=0;i--){ const key=localStorage.key(i); if(key && key.startsWith(CACHE_PREFIX)){ localStorage.removeItem(key); cleared++; } } cacheStats={ size:0, hits:0, misses:0, lastCleanup:Date.now() }; updateCacheStats(); logDebug('warning',`🗑 تم مسح ${cleared} عنصر كاش`); showNotification(`تم مسح ${cleared} عنصر من الكاش`,'success'); if(debugMode) updateCacheStatusDisplay(); logAudit('cache_clear',`مسح ${cleared} عنصر`); }
+
+        // ————— Debug & Monitor —————
+        function toggleDebug(){ debugMode=!debugMode; const t=document.querySelector('.debug-toggle'); const p=document.getElementById('debugPanel'); if(debugMode){ t.classList.add('active'); p.classList.add('show'); logDebug('success','✓ تفعيل وضع التصحيح'); updateSystemStatus(); updateApiMonitor(); updateCacheStatusDisplay(); if(!window.debugInterval){ window.debugInterval=setInterval(()=>{ if(debugMode){ updateSystemStatus(); updateApiMonitor(); updateCacheStatusDisplay(); renderPriorityPreview(); } else { clearInterval(window.debugInterval); window.debugInterval=null; } }, 3000); } } else { t.classList.remove('active'); p.classList.remove('show'); logDebug('warning','⚠ إلغاء وضع التصحيح'); if(window.debugInterval){ clearInterval(window.debugInterval); window.debugInterval=null; } } }
+        function logDebug(type,message){ const timestamp=new Date().toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit',second:'2-digit'}); const entry={type,message,timestamp,id:Date.now()}; debugMessages.unshift(entry); if(debugMessages.length>100) debugMessages=debugMessages.slice(0,100); if(debugMode) updateDebugLog(); console.log(`[DEBUG ${timestamp}] ${message}`); }
+        function updateDebugLog(){ const el=document.getElementById('debugLog'); if(!el) return; el.innerHTML = debugMessages.slice(0,20).map(e=>`<div class="debug-${e.type}">[${e.timestamp}] ${e.message}</div>`).join(''); }
+        function updateApiMonitor(){ if(!debugMode) return; const now=Date.now(); if(now-lastApiReset>3600000){ apiCallCount=0; lastApiReset=now; logDebug('success','🔄 إعادة تعيين عداد API (ساعة جديدة)'); }
+            const remaining=Math.max(0, 1000 - apiCallCount); const hitRate= totalRequests>0 ? Math.round((cacheHits/totalRequests)*100) : 0;
+            document.getElementById('apiCallsCount').textContent=apiCallCount; document.getElementById('apiQuotaRemaining').textContent=remaining; document.getElementById('cacheHitRate').textContent= hitRate + '%'; document.getElementById('cacheSizeDisplay').textContent=cacheStats.size;
+            const warningDiv=document.getElementById('apiQuotaWarning'); warningDiv.innerHTML='';
+            document.getElementById('savingModeBadge').style.display = (apiCallCount>900) ? 'inline-flex' : 'none';
+            if(apiCallCount>900){ warningDiv.innerHTML='<div class="api-quota-danger"><i class="fas fa-exclamation-triangle"></i> وشك نفاد حصة API! سيتم التحديث لاحقًا حسب الأولوية.</div>'; disableApiFeatures(true); }
+            else if(apiCallCount>800){ warningDiv.innerHTML='<div class="api-quota-warning"><i class="fas fa-exclamation-circle"></i> حصة API منخفضة – يُفضّل الاعتماد على الكاش ووضع التوفير.</div>'; disableApiFeatures(false); }
+            else { disableApiFeatures(false); }
         }
+        function disableApiFeatures(disable){ const r=document.getElementById('refreshBtn'); const o=document.getElementById('optimizeBtn'); if(r){ r.disabled=disable; r.title=disable?'معطل - حصة API منخفضة':'تحديث البيانات'; } if(o){ o.disabled=disable; o.title=disable?'معطل - حصة API منخفضة':'تحسين تلقائي'; } }
+        function incrementApiCall(amount=1){ apiCallCount += amount; totalRequests++; logDebug('warning',`📡 استخدام API: +${amount} (المجموع: ${apiCallCount}/1000)`); if(debugMode) updateApiMonitor(); if(apiCallCount>800 && apiCallCount<=800+amount){ showNotification('تحذير: حصة YouTube API منخفضة!','warning'); logDebug('error','⚠ حصة API منخفضة'); } }
+        function incrementCacheHit(){ cacheHits++; totalRequests++; if(debugMode) updateApiMonitor(); }
+
+        // ————— التحميل الأولي —————
+        async function loadData(){ if(!isLoggedIn) return; try{ initializeFirebase(); await Promise.all([ loadRequests(), loadChannelsWithCache(), loadKey(), loadSiteSettings(), loadContactSettings() ]); updateStats(); logDebug('success','✓ تم تحميل جميع البيانات'); } catch(e){ logDebug('error',`✗ خطأ تحميل البيانات: ${e.message}`); showNotification('خطأ في تحميل البيانات','error'); } }
+
+        // ————— عرض إحصاءات عامة ————— (اختصارًا)
+        function updateStats(){ const c=channels.length; const live=channels.filter(x=>x.status==='live').length; const stats=document.getElementById('statsOverview'); stats.innerHTML = `
+            <div class="stat-card"><div class="stat-icon requests"><i class="fas fa-plug"></i></div><div class="stat-number">${apiCallCount}</div><div class="stat-label">طلبات API</div></div>
+            <div class="stat-card"><div class="stat-icon channels"><i class="fas fa-tv"></i></div><div class="stat-number">${c}</div><div class="stat-label">إجمالي القنوات</div></div>
+            <div class="stat-card"><div class="stat-icon live"><i class="fas fa-broadcast-tower"></i></div><div class="stat-number">${live}</div><div class="stat-label">قنوات مباشرة</div></div>
+            <div class="stat-card"><div class="stat-icon api-status"><i class="fas fa-signal"></i></div><div class="stat-number">${Math.max(0,1000-apiCallCount)}</div><div class="stat-label">حصة متبقية</div></div>`;
+        }
+
+        // ————— تحميل القنوات (مع كاش) —————
+        async function loadChannelsWithCache(){ const loading=document.getElementById('channelsLoading'); const list=document.getElementById('channels'); loading.style.display='block'; list.innerHTML=''; try{
+                const cached=getCache('channels_list'); if(cached){ channels=cached; renderChannels(); loading.style.display='none'; logDebug('success',`✓ تحميل ${channels.length} قناة من الكاش`); return; }
+                const snapshot = await db.collection('channels').orderBy('order','asc').get(); channels=[]; if(snapshot.empty){ list.innerHTML = `<div class='loading'>لا توجد قنوات</div>`; } else { snapshot.forEach(doc=>{ channels.push({ id:doc.id, ...doc.data() }); }); setCache('channels_list', channels); renderChannels(); }
+            } catch(e){ list.innerHTML = `<div class='loading'><i class='fas fa-exclamation-triangle'></i> خطأ في التحميل</div>`; logDebug('error',`✗ خطأ تحميل القنوات: ${e.message}`); } finally { loading.style.display='none'; } }
+
+        function renderChannels(){ const container=document.getElementById('channels'); container.innerHTML=''; channels.forEach((channel,index)=>{ const displayName = channel.title || channel.name || 'قناة غير محددة'; const addedDate = channel.addedAt && channel.addedAt.toDate ? formatDate(channel.addedAt.toDate()) : (channel.addedAt? formatDate(new Date(channel.addedAt)) : 'غير محدد'); const isCached = !!getCache(`channel_${channel.id}`);
+            const el=document.createElement('div'); el.className=`item-card ${isCached?'cached':''}`; el.draggable=true; el.dataset.channelId=channel.id; el.dataset.order=channel.order||index;
+            el.innerHTML = `
+                <div class='drag-handle'><i class='fas fa-grip-vertical'></i></div>
+                <div class='item-header'>
+                    <div class='item-info'>
+                        <div class='item-name'>${displayName}</div>
+                        ${channel.url ? `<a href='${channel.url}' target='_blank' class='item-url'><i class='fas fa-external-link-alt'></i> ${channel.url}</a>` : ''}
+                        <div class='item-timestamp'><i class='fas fa-calendar-plus'></i> تم إضافتها: ${addedDate}</div>
+                        <div class='item-status status-${channel.status || 'offline'}'>${getStatusText(channel.status)}</div>
+                        ${channel.priorityScore!==undefined? `<div style='margin-top:6px;font-size:.85rem;color:#4f46e5'><i class='fas fa-bolt'></i> أولوية: ${channel.priorityScore}</div>`: ''}
+                        ${isCached ? `<div style='color:#9b59b6;font-size:.8rem;margin-top:5px;'><i class='fas fa-database'></i> محفوظة في الكاش</div>`: ''}
+                    </div>
+                </div>
+                <div class='item-actions'>
+                    <select class='status-selector' onchange="updateStatus('${channel.id}', this.value)">
+                        <option value='offline' ${channel.status==='offline' || !channel.status ? 'selected':''}>غير متاح</option>
+                        <option value='live' ${channel.status==='live' ? 'selected':''}>مباشر</option>
+                        <option value='upcoming' ${channel.status==='upcoming' ? 'selected':''}>قريبًا</option>
+                    </select>
+                    <button class='btn btn-delete' onclick="deleteChannel('${channel.id}')"><i class='fas fa-trash'></i> حذف</button>
+                </div>`;
+            el.addEventListener('dragstart', handleDragStart); el.addEventListener('dragover', handleDragOver); el.addEventListener('drop', handleDrop); el.addEventListener('dragend', handleDragEnd);
+            container.appendChild(el);
+        }); renderPriorityPreview(); }
+
+        function getStatusText(st){ return st==='live'?'مباشر': st==='upcoming'?'قريبًا': st==='error'?'خطأ':'غير متاح'; }
+        function formatDate(d){ try{ return new Date(d).toLocaleString('ar-SA',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}); }catch{ return 'غير محدد'; } }
+
+        // —————— 🎯 إضافة القنوات الذكية ——————
+        function parseSmartInput(input){ input=input.trim(); if(!input) return null;
+            // 1) رابط كامل
+            if(/^https?:\/\/([^\s]+)$/.test(input)){
+                // استخراج أي نوع من: /channel/UC.. | /@handle | /c/name | /user/name
+                const patterns=[
+                    { regex:/youtube\.com\/channel\/([a-zA-Z0-9_-]+)/, type:'channel_id' },
+                    { regex:/youtube\.com\/@([a-zA-Z0-9_.-]+)/, type:'handle' },
+                    { regex:/youtube\.com\/c\/([a-zA-Z0-9_-]+)/, type:'custom_url' },
+                    { regex:/youtube\.com\/user\/([a-zA-Z0-9_-]+)/, type:'username' }
+                ];
+                for(const p of patterns){ const m=input.match(p.regex); if(m) return { type:p.type, value:m[1], original:input } }
+                return { type:'url', value:input, original:input };
+            }
+            // 2) @اسم المستخدم
+            if(/^@/.test(input)){ return { type:'handle', value: input.replace(/^@/,''), original:input }; }
+            // 3) معرف قناة UCxxxx
+            if(/^UC[\w-]{10,}$/.test(input)){ return { type:'channel_id', value: input, original:input }; }
+            // 4) اسم مخصص — سنبحث عنه عند توفر API
+            return { type:'custom_name', value: input, original:input };
+        }
+
+        async function addSmartChannel(){ const raw=document.getElementById('smartChannelInput').value; const parsed=parseSmartInput(raw);
+            if(!parsed){ showNotification('أدخل قيمة صالحة','error'); return; }
+            const apiKey = await getApiKey();
+            const savingMode = apiCallCount>900 || !apiKey; // وضع توفير
+            try{
+                // نحاول توليد URL قياسي إن أمكن
+                let url = null; if(parsed.type==='channel_id'){ url = `https://www.youtube.com/channel/${parsed.value}`; }
+                else if(parsed.type==='handle'){ url = `https://www.youtube.com/@${parsed.value}`; }
+                else if(parsed.type==='custom_url'){ url = `https://www.youtube.com/c/${parsed.value}`; }
+                else if(parsed.type==='username'){ url = `https://www.youtube.com/user/${parsed.value}`; }
+                else if(parsed.type==='url'){ url = parsed.value; }
+
+                // إضافة أولية إلى Firestore
+                const maxOrder = Math.max(...channels.map(c=>c.order||0), 0);
+                const baseDoc = { name: parsed.value, url, status:'offline', order:maxOrder+1, addedAt:new Date(), needsUpdate: savingMode, sourceType: parsed.type };
+                const docRef = await db.collection('channels').add(baseDoc);
+                const newChannel = { id:docRef.id, ...baseDoc };
+                channels.push(newChannel); setCache('channels_list', channels); renderChannels(); updateStats();
+                showNotification('تمت إضافة القناة (تعرف تلقائي)','success'); logDebug('success',`✓ إضافة ذكية: ${parsed.type} = ${parsed.value}`); logAudit('add',`إضافة قناة (${parsed.type})`, { id:docRef.id, value:parsed.value });
+
+                // إذا لسنا في وضع التوفير، نجلب تفاصيل القناة الآن
+                if(!savingMode && apiKey){ setTimeout(async ()=>{ try{ await updateChannelFromInput(newChannel, parsed, apiKey); renderChannels(); } catch(e){ logDebug('error',`✗ فشل جلب بيانات القناة: ${e.message}`); } }, 300); }
+            } catch(e){ showNotification('حدث خطأ أثناء الإضافة','error'); logDebug('error',`✗ خطأ إضافة ذكية: ${e.message}`); }
+        }
+
+        async function updateChannelFromInput(channel, parsed, apiKey){
+            const cacheKey = `channel_${channel.id}`; const cached=getCache(cacheKey); if(cached && cached.title){ return cached; }
+            incrementApiCall(3);
+            let apiUrl=null;
+            if(parsed.type==='channel_id'){
+                apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${parsed.value}&key=${apiKey}`;
+            } else {
+                // بحث باستخدام القيمة
+                const q = encodeURIComponent(parsed.value);
+                const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${q}&key=${apiKey}&maxResults=1`;
+                const sRes = await fetch(searchUrl); const sData = await sRes.json();
+                if(sData.items && sData.items.length>0){ const channelId = (sData.items[0].snippet.channelId) || (sData.items[0].id && sData.items[0].id.channelId); if(channelId){ apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${channelId}&key=${apiKey}`; } }
+            }
+            if(!apiUrl) return null; const res = await fetch(apiUrl); const data = await res.json(); if(data.items && data.items.length>0){ const ch = data.items[0]; const model = { title: ch.snippet.title, thumbnail: (ch.snippet.thumbnails && (ch.snippet.thumbnails.medium?.url || ch.snippet.thumbnails.default?.url)) };
+                await db.collection('channels').doc(channel.id).update({ title:model.title, thumbnail:model.thumbnail, needsUpdate:false, lastUpdated:new Date() });
+                setCache(cacheKey, model); logDebug('success',`✓ تم تحديث تفاصيل القناة: ${model.title}`); return model; }
+            return null;
+        }
+
+        // الوظيفة القديمة مع تحسينات — تستخدم من التحديث الجماعي
+        function extractChannelId(url){ if(!url) return null; const patterns=[ {regex:/youtube\.com\/channel\/([a-zA-Z0-9_-]+)/, type:'channel_id'}, {regex:/youtube\.com\/c\/([a-zA-Z0-9_-]+)/, type:'custom_url'}, {regex:/youtube\.com\/@([a-zA-Z0-9_.-]+)/, type:'handle'}, {regex:/youtube\.com\/user\/([a-zA-Z0-9_-]+)/, type:'username'} ]; for(let p of patterns){ const m=url.match(p.regex); if(m) return { value:m[1], type:p.type, isChannelId: p.type==='channel_id' }; } return null; }
+
+        async function updateChannelFromAPI(channel, apiKey){ try{ const info = channel.url ? extractChannelId(channel.url) : (channel.sourceType? {value:channel.name, type:channel.sourceType, isChannelId: channel.sourceType==='channel_id'} : null); if(!info){ logDebug('warning',`⚠ لا يمكن استخراج معرف القناة: ${channel.url||channel.name}`); return; }
+                const cacheKey=`channel_${channel.id}`; const cached=getCache(cacheKey); if(cached){ return cached; }
+                incrementApiCall(3);
+                let apiUrl; if(info.isChannelId){ apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${info.value}&key=${apiKey}`; } else { const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${info.value}&key=${apiKey}&maxResults=1`; const s=await fetch(searchUrl); const sd=await s.json(); if(sd.items && sd.items.length>0){ const channelId = (sd.items[0].snippet.channelId) || (sd.items[0].id && sd.items[0].id.channelId); if(channelId){ apiUrl=`https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${channelId}&key=${apiKey}`; } else { return; } } else { return; } }
+                const r=await fetch(apiUrl); const data=await r.json(); if(data.items && data.items.length>0){ const ch=data.items[0]; const model={ title:ch.snippet.title, thumbnail:ch.snippet.thumbnails?.medium?.url }; await db.collection('channels').doc(channel.id).update({ title:model.title, thumbnail:model.thumbnail, lastUpdated:new Date(), needsUpdate:false }); setCache(cacheKey, model); return model; }
+            } catch(e){ logDebug('error',`✗ خطأ تحديث قناة: ${e.message}`); throw e; } }
+
+        // ————— التحديث/التحسين الذكي —————
+        function computePriorityScore(channel){ // مباشر > قريبًا > غير متاح، وحداثة التحديث
+            const statusScore = channel.status==='live' ? 100 : channel.status==='upcoming' ? 70 : 10;
+            const last = channel.lastUpdated ? new Date(channel.lastUpdated.seconds? channel.lastUpdated.seconds*1000 : channel.lastUpdated) : null;
+            const freshness = last ? Math.max(0, 50 - Math.floor((Date.now() - last.getTime())/60000)) : 25; // كل دقيقة تقل النقاط
+            const needs = channel.needsUpdate ? 30 : 0;
+            return statusScore + freshness + needs;
+        }
+        function annotatePriorities(){ channels = channels.map(c=>({ ...c, priorityScore: computePriorityScore(c) })); channels.sort((a,b)=> (b.priorityScore||0) - (a.priorityScore||0)); }
+        async function optimizeChannels(){ const apiKey = await getApiKey(); if(!apiKey){ showNotification('لا يوجد مفتاح YouTube API','error'); return; } annotatePriorities(); let optimized=0, errors=0; for(const ch of channels){ if(apiCallCount>950) break; try{ await updateChannelFromAPI(ch, apiKey); optimized++; await new Promise(r=>setTimeout(r,120)); } catch{ errors++; } } showNotification(`تم تحسين ${optimized} قناة${errors?` (${errors} خطأ)`:''}`,(optimized?'success':'warning')); setCache('channels_list', channels); await loadChannelsWithCache(); logAudit('optimize',`تحسين ${optimized} قناة`); }
+        async function refreshChannelData(){ const apiKey = await getApiKey(); if(!apiKey){ showNotification('لا يوجد مفتاح YouTube API','error'); return; } annotatePriorities(); let updated=0, fromCache=0; for(const ch of channels){ if(apiCallCount>950) break; const cached=getCache(`channel_${ch.id}`); if(cached){ fromCache++; continue; } try{ await updateChannelFromAPI(ch, apiKey); updated++; await new Promise(r=>setTimeout(r,150)); } catch{} } setCache('channels_list', channels); showNotification(`تم التحديث: ${updated} من API، ${fromCache} من الكاش`,'success'); await loadChannelsWithCache(); logAudit('refresh',`تحديث ${updated} قناة (من الكاش ${fromCache})`); }
+        function startSmartScheduler(){ if(schedulerId) clearInterval(schedulerId); schedulerId = setInterval(async ()=>{ try{ const apiKey = await getApiKey(); if(!apiKey) return; annotatePriorities(); const top = channels.slice(0, Math.max(3, Math.floor(channels.length*0.1))); // نحدّث أعلى 10% بحد أدنى 3
+                    for(const ch of top){ if(apiCallCount>950) break; await updateChannelFromAPI(ch, apiKey); await new Promise(r=>setTimeout(r,150)); }
+                    logDebug('success',`⏱ تحديث مجدول (${top.length}) قناة`); if(debugMode) renderPriorityPreview(); setCache('channels_list', channels);
+                } catch(e){ logDebug('error',`✗ المجدول: ${e.message}`); }
+            }, UPDATE_INTERVAL_MS);
+        }
+        function renderPriorityPreview(){ if(!debugMode) return; const prev=document.getElementById('priorityPreview'); if(!prev) return; const sample = [...channels].sort((a,b)=> (b.priorityScore||0)-(a.priorityScore||0)).slice(0,8).map(c=>`<li>${(c.title||c.name||'قناة')} — <b>${c.priorityScore||computePriorityScore(c)}</b></li>`).join(''); prev.innerHTML = `<div class='debug-title'><i class='fas fa-bolt'></i> معاينة الأولويات</div><ul style='padding-right:18px; line-height:1.7;'>${sample||'<li>لا توجد قنوات</li>'}</ul>`; }
+
+        // ————— إدارة الطلبات (مختصرة) —————
+        async function loadRequests(){ const loading=document.getElementById('requestsLoading'); const box=document.getElementById('requests'); loading.style.display='block'; box.innerHTML=''; try{ const snapshot = await db.collection('requests').orderBy('timestamp','desc').get(); requests=[]; if(snapshot.empty){ box.innerHTML = `<div class='loading'>لا توجد طلبات</div>`; } else { snapshot.forEach(doc=>requests.push({ id:doc.id, ...doc.data() })); box.innerHTML = requests.map(r=>`<div class='item-card'><div class='item-name'><i class='fas fa-user-plus'></i> طلب: ${r.name||'بدون اسم'}</div><div class='item-timestamp'>${r.timestamp? formatDate(r.timestamp.toDate ? r.timestamp.toDate(): r.timestamp):''}</div></div>`).join(''); } } catch(e){ box.innerHTML = `<div class='loading'><i class='fas fa-exclamation-triangle'></i> خطأ في تحميل الطلبات</div>`; } finally { loading.style.display='none'; } }
+
+        // ————— تغيير الحالة / الحذف —————
+        async function updateStatus(id, value){ try{ await db.collection('channels').doc(id).update({ status:value, lastUpdated:new Date() }); const ch = channels.find(c=>c.id===id); if(ch){ ch.status=value; ch.lastUpdated=new Date(); } renderChannels(); logAudit('edit',`تغيير حالة قناة إلى ${value}`, {id}); } catch(e){ showNotification('خطأ في تحديث الحالة','error'); } }
+        async function deleteChannel(id){ if(!confirm('هل تريد حذف القناة؟')) return; try{ await db.collection('channels').doc(id).delete(); channels = channels.filter(c=>c.id!==id); setCache('channels_list', channels); renderChannels(); updateStats(); showNotification('تم الحذف','success'); logAudit('delete','حذف قناة',{id}); } catch(e){ showNotification('خطأ في الحذف','error'); }
+        }
+
+        // ————— إعدادات عامة (اختصارًا) —————
+        async function loadKey(){ const snap = await db.collection('settings').doc('youtube').get(); const data = snap.exists? snap.data(): {}; if(data.key) document.getElementById('ytKey').value=data.key; }
+        async function saveKey(){ const key=document.getElementById('ytKey').value.trim(); await db.collection('settings').doc('youtube').set({ key }, { merge:true }); showNotification('تم حفظ المفتاح','success'); logAudit('edit','تحديث مفتاح API'); }
+        async function getApiKey(){ const el=document.getElementById('ytKey'); return el && el.value.trim() ? el.value.trim() : null; }
+        async function saveSiteSettings(){ const name=document.getElementById('siteName').value; const desc=document.getElementById('siteDescription').value; await db.collection('settings').doc('site').set({ name, desc }, { merge:true }); showNotification('تم حفظ الإعدادات','success'); logAudit('edit','تحديث إعدادات الموقع'); }
+        async function loadSiteSettings(){ const snap=await db.collection('settings').doc('site').get(); if(snap.exists){ const d=snap.data(); document.getElementById('siteName').value=d.name||''; document.getElementById('siteDescription').value=d.desc||''; } }
+        async function saveContactSettings(){ const email=document.getElementById('contactEmail').value; await db.collection('settings').doc('contact').set({ email }, { merge:true }); showNotification('تم حفظ معلومات التواصل','success'); logAudit('edit','تحديث معلومات التواصل'); }
+        async function loadContactSettings(){ const snap=await db.collection('settings').doc('contact').get(); if(snap.exists){ const d=snap.data(); document.getElementById('contactEmail').value=d.email||''; } }
+        function handleLogoUpload(input){ const file=input.files && input.files[0]; if(!file) return; showNotification('سيتم رفع الشعار…','success'); logAudit('edit','رفع شعار'); }
+
+        // ————— سحب وإفلات الترتيب —————
+        function handleDragStart(e){ draggedElement = this; this.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; }
+        function handleDragOver(e){ e.preventDefault(); const target = this; if(target && target!==draggedElement){ const parent = target.parentNode; const draggedIndex = Array.from(parent.children).indexOf(draggedElement); const targetIndex = Array.from(parent.children).indexOf(target); if(draggedIndex < targetIndex){ parent.insertBefore(draggedElement, target.nextSibling); } else { parent.insertBefore(draggedElement, target); } }
+        }
+        async function handleDrop(){ this.classList.remove('dragover'); await persistOrder(); }
+        function handleDragEnd(){ this.classList.remove('dragging'); }
+        async function persistOrder(){ const container=document.getElementById('channels'); const cards=Array.from(container.children); for(let i=0;i<cards.length;i++){ const id=cards[i].dataset.channelId; await db.collection('channels').doc(id).update({ order:i }); const ch=channels.find(c=>c.id===id); if(ch) ch.order=i; } setCache('channels_list', channels); showNotification('تم حفظ الترتيب','success'); logAudit('edit','إعادة ترتيب القنوات'); }
+
+        // ————— سجل النشاط —————
+        async function logAudit(type, message, extra={}){ try{ const payload = { type, message, extra, ts:new Date(), user:'admin' }; await db.collection('audit').add(payload); if(debugMode){ debugMessages.unshift({ type:'success', message:`[AUDIT] ${type}: ${message}`, timestamp:new Date().toLocaleTimeString('ar-SA') }); updateDebugLog(); } } catch(e){ console.warn('Audit log write failed', e); } }
+        function openAuditFull(){ document.getElementById('auditFull').style.display='flex'; loadAuditTable(); }
+        function closeAuditFull(){ document.getElementById('auditFull').style.display='none'; }
+        async function loadAuditTable(){ const body=document.getElementById('auditTableBody'); body.innerHTML=''; const snap = await db.collection('audit').orderBy('ts','desc').limit(500).get(); const rows=[]; let currentDate=null; snap.forEach(doc=>{ const a=doc.data(); const d=new Date(a.ts.seconds? a.ts.seconds*1000 : a.ts); const dateKey = d.toLocaleDateString('ar-SA'); if(dateKey!==currentDate){ currentDate = dateKey; rows.push(`<tr><td colspan='4'><span class='group-date'>${dateKey}</span></td></tr>`); }
+                const badge = a.type==='add'?'b-add': a.type==='delete'?'b-del': a.type==='edit'?'b-edit': a.type==='login'||a.type==='logout'?'b-login': a.type==='clear_audit'?'b-clear':'b-edit';
+                rows.push(`<tr><td><span class='badge ${badge}'>${a.type}</span> ${a.message||''}</td><td>${a.extra && Object.keys(a.extra).length ? `<code>${escapeHtml(JSON.stringify(a.extra))}</code>`:''}</td><td>${a.user||''}</td><td>${d.toLocaleTimeString('ar-SA',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</td></tr>`);
+            }); body.innerHTML = rows.join(''); }
+        async function exportAuditJSON(){ const snap = await db.collection('audit').orderBy('ts','desc').limit(1000).get(); const data=[]; snap.forEach(doc=> data.push({ id:doc.id, ...doc.data() })); const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'}); const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`audit-${Date.now()}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); showNotification('تم تصدير السجل بصيغة JSON','success'); }
+        function confirmClearAudit(){ if(!confirm('تأكيد مسح سجل النشاط بالكامل؟ سيتم حفظ حدث المسح في السجل.')) return; clearAudit(); }
+        async function clearAudit(){ // نحفظ حدث المسح ثم نبدأ صفحة جديدة
+            await db.collection('audit').add({ type:'clear_audit', message:'مسح السجل', ts:new Date(), user:'admin' });
+            // لا يوجد حذف جماعي مباشر؛ يمكننا وسم العناصر أو إنشاء مجموعة جديدة، لأغراض العرض سنحذف آخر 1000 عنصر
+            const snap = await db.collection('audit').limit(1000).get(); const batch = db.batch(); snap.forEach(doc=> batch.delete(doc.ref)); await batch.commit(); showNotification('تم مسح السجل','success'); loadAuditTable(); }
+        function escapeHtml(s){ return String(s).replace(/[&<>"]+/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",""":"&quot;"}[m])); }
+
+        // ————— أدوات مساعدة —————
+        function toggleQuickAdd(){ const el=document.getElementById('quickAddForm'); el.style.display = el.style.display==='none' ? 'block':'none'; }
+        function updateSystemStatus(){ const sys=document.getElementById('systemStatus'); if(!sys) return; const remaining=Math.max(0,1000-apiCallCount); sys.innerHTML = `عدد القنوات: ${channels.length} | حصة API متبقية: ${remaining} | عناصر الكاش: ${cacheStats.size}`; }
+        function updateCacheStatusDisplay(){ const el=document.getElementById('cacheStatus'); if(!el) return; el.innerHTML = `الحجم: ${cacheStats.size} | hits: ${cacheStats.hits} | misses: ${cacheStats.misses}`; }
+
+        // ————— إضافة سريعة قديمة —————
+        async function addChannelQuick(){ const name=document.getElementById('quickChannelName').value.trim(); if(!name) return; const doc= await db.collection('channels').add({ name, status:'offline', order:(channels.length? (Math.max(...channels.map(c=>c.order||0))+1):1), addedAt:new Date(), needsUpdate:true, sourceType:'custom_name' }); channels.push({ id:doc.id, name, status:'offline', needsUpdate:true, sourceType:'custom_name' }); setCache('channels_list', channels); renderChannels(); updateStats(); showNotification('تمت الإضافة','success'); logAudit('add','إضافة قناة (سريعة)', {id:doc.id, name}); }
+
+        // ————— اختبار API —————
+        async function testYouTubeAPI(){ const key=await getApiKey(); if(!key){ showNotification('أدخل مفتاح API أولًا','error'); return; } try{ incrementApiCall(); const res = await fetch(`https://www.googleapis.com/youtube/v3/i18nLanguages?part=snippet&key=${key}`); const data = await res.json(); if(data && !data.error){ showNotification('نجح اختبار API','success'); logDebug('success','✓ اختبار API ناجح'); } else { throw new Error(data.error?.message||'فشل'); } } catch(e){ showNotification('فشل اختبار API','error'); logDebug('error',`✗ اختبار API: ${e.message}`); } }
+
+        // ————— بدء تحميل تلقائي عند جاهزية DOM —————
+        document.addEventListener('DOMContentLoaded', ()=>{ /* بقاء شاشة الدخول حتى تسجيل الدخول */ });
+    </script>
+</body>
+</html>
