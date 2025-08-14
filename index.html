@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title id="pageTitle">مراقب البثوث المباشرة المحسن</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,27 +12,72 @@
             box-sizing: border-box;
         }
         
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: #333;
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --danger-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --dark-gradient: linear-gradient(135deg, #667292 0%, #764ba2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.15);
+            --glass-border: rgba(255, 255, 255, 0.25);
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --text-light: rgba(255, 255, 255, 0.9);
+            --shadow-soft: 0 8px 32px rgba(31, 38, 135, 0.15);
+            --shadow-medium: 0 12px 40px rgba(31, 38, 135, 0.2);
+            --shadow-strong: 0 16px 48px rgba(31, 38, 135, 0.25);
+            --border-radius: 20px;
+            --border-radius-small: 12px;
         }
         
-        .navbar {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 1rem 0;
+        body {
+            font-family: 'Segoe UI', 'Tajawal', 'Cairo', sans-serif;
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+        
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 200, 255, 0.1) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(2deg); }
+        }
+        
+        /* Header */
+        .header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 1.5rem 0;
             position: sticky;
             top: 0;
             z-index: 1000;
+            box-shadow: var(--shadow-soft);
         }
         
-        .nav-container {
-            max-width: 1200px;
+        .header-container {
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 0 20px;
+            padding: 0 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -41,342 +86,328 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 15px;
-            color: white;
-            font-size: 1.5rem;
-            font-weight: bold;
+            gap: 1rem;
+            color: var(--text-light);
+            font-size: 1.8rem;
+            font-weight: 700;
         }
         
-        .logo img {
-            max-height: 40px;
-            border-radius: 8px;
+        .logo i {
+            font-size: 2.2rem;
+            background: var(--success-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: pulse 2s ease-in-out infinite alternate;
         }
         
-        .site-title {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.05); }
         }
         
-        .site-name {
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-        
-        .site-description {
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-        
-        .nav-controls {
+        .header-actions {
             display: flex;
             align-items: center;
-            gap: 15px;
-        }
-        
-        .view-toggle {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            padding: 12px 20px;
-            border-radius: 25px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
-        }
-        
-        .view-toggle:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-        
-        .view-toggle.active {
-            background: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
+            gap: 1rem;
         }
         
         .refresh-btn {
-            background: linear-gradient(45deg, #00d4aa, #00bfa5);
+            background: var(--success-gradient);
             border: none;
             padding: 12px 24px;
-            border-radius: 25px;
+            border-radius: var(--border-radius-small);
             color: white;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 212, 170, 0.3);
+            box-shadow: var(--shadow-soft);
             display: flex;
             align-items: center;
             gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .refresh-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .refresh-btn:hover::before {
+            left: 100%;
         }
         
         .refresh-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 212, 170, 0.4);
+            box-shadow: var(--shadow-medium);
         }
         
-        .refresh-btn:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        
-        .controls-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-        }
-        
-        .filter-controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        
-        .filter-btn {
-            background: rgba(102, 126, 234, 0.1);
-            border: 2px solid rgba(102, 126, 234, 0.3);
-            padding: 10px 18px;
-            border-radius: 25px;
-            color: #667eea;
+        .add-channel-btn {
+            background: var(--secondary-gradient);
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--border-radius-small);
+            color: white;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
+            box-shadow: var(--shadow-soft);
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
         }
         
-        .filter-btn:hover {
-            background: rgba(102, 126, 234, 0.2);
+        .add-channel-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .add-channel-btn:hover::before {
+            left: 100%;
+        }
+        
+        .add-channel-btn:hover {
             transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
         }
         
-        .filter-btn.active {
-            background: #667eea;
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        /* Section Styles */
+        .section {
+            margin-bottom: 3rem;
+        }
+        
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding: 1rem 0;
+        }
+        
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-light);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-title i {
+            font-size: 2rem;
+            padding: 12px;
+            border-radius: var(--border-radius-small);
             color: white;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
         }
         
-        .search-box {
-            padding: 12px 20px;
-            border: 2px solid rgba(102, 126, 234, 0.3);
+        .section-count {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 8px 16px;
             border-radius: 25px;
-            font-size: 1rem;
-            width: 280px;
-            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-light);
+            border: 1px solid var(--glass-border);
         }
         
-        .search-box:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 15px rgba(102, 126, 234, 0.3);
+        /* Status-specific colors */
+        .live .section-title i {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+            animation: liveGlow 2s ease-in-out infinite alternate;
         }
         
+        @keyframes liveGlow {
+            0% { box-shadow: 0 0 20px rgba(255, 107, 107, 0.3); }
+            100% { box-shadow: 0 0 30px rgba(255, 107, 107, 0.6); }
+        }
+        
+        .upcoming .section-title i {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+        
+        .offline .section-title i {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+        }
+        
+        /* Channel Grid */
         .channels-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-            gap: 25px;
-            transition: all 0.3s ease;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
         }
         
-        .channels-grid.list-view {
-            grid-template-columns: 1fr;
-            gap: 15px;
-        }
-        
+        /* Channel Card */
         .channel-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--glass-border);
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
+            box-shadow: var(--shadow-soft);
+        }
+        
+        .channel-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.05) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
         }
         
         .channel-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: var(--shadow-strong);
         }
         
-        .channel-card.list-view {
-            display: flex;
-            flex-direction: row;
-            height: 140px;
+        .channel-card:hover::before {
+            opacity: 1;
         }
         
+        /* Thumbnail */
         .channel-thumbnail {
             position: relative;
-            height: 220px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            height: 200px;
+            background: var(--dark-gradient);
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
         }
         
-        .channel-card.list-view .channel-thumbnail {
-            width: 220px;
-            height: 140px;
-            flex-shrink: 0;
-        }
-        
         .channel-thumbnail img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .channel-card:hover .channel-thumbnail img {
+            transform: scale(1.1);
         }
         
         .thumbnail-placeholder {
-            color: white;
+            color: rgba(255, 255, 255, 0.6);
             font-size: 3rem;
-            opacity: 0.7;
-        }
-        
-        .channel-card.list-view .thumbnail-placeholder {
-            font-size: 2rem;
         }
         
         .status-badge {
             position: absolute;
             top: 15px;
-            left: 15px;
-            padding: 8px 15px;
-            border-radius: 20px;
+            right: 15px;
+            padding: 8px 16px;
+            border-radius: 25px;
             font-size: 0.8rem;
             font-weight: 600;
             color: white;
             backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
+            z-index: 2;
         }
         
         .status-live {
-            background: rgba(231, 76, 60, 0.9);
-            animation: pulse 2s infinite;
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.9) 0%, rgba(255, 107, 107, 0.9) 100%);
+            animation: liveStatusPulse 2s infinite;
         }
         
-        .status-upcoming {
-            background: rgba(243, 156, 18, 0.9);
-        }
-        
-        .status-offline {
-            background: rgba(149, 165, 166, 0.9);
-        }
-        
-        .status-error {
-            background: rgba(230, 126, 34, 0.9);
-        }
-        
-        @keyframes pulse {
+        @keyframes liveStatusPulse {
             0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
             70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
             100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
         }
         
-        .channel-info {
-            padding: 25px;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
+        .status-upcoming {
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.9) 0%, rgba(230, 126, 34, 0.9) 100%);
         }
         
-        .channel-card.list-view .channel-info {
-            padding: 20px;
-            justify-content: space-between;
+        .status-offline {
+            background: linear-gradient(135deg, rgba(149, 165, 166, 0.9) 0%, rgba(127, 140, 141, 0.9) 100%);
+        }
+        
+        /* Channel Info */
+        .channel-info {
+            padding: 1.5rem;
+            color: var(--text-light);
         }
         
         .channel-name {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 12px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-light);
             display: -webkit-box;
-            -webkit-line-clamp: 2;
+            -webkit-line-clamp: 1;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            line-height: 1.3;
-        }
-        
-        .channel-card.list-view .channel-name {
-            font-size: 1.1rem;
-            margin-bottom: 8px;
-            -webkit-line-clamp: 1;
-            line-height: 1.2;
         }
         
         .stream-title {
             font-size: 1rem;
-            color: #666;
-            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 1rem;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
             line-height: 1.4;
-            flex: 1;
-            min-height: 40px;
+            min-height: 2.8rem;
         }
         
-        .channel-card.list-view .stream-title {
-            font-size: 0.9rem;
-            margin-bottom: 12px;
-            -webkit-line-clamp: 2;
-            line-height: 1.3;
-            min-height: 35px;
-        }
-        
-        .stream-info {
+        .stream-meta {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 1.5rem;
             font-size: 0.9rem;
-            color: #7f8c8d;
+            color: rgba(255, 255, 255, 0.7);
         }
         
-        .channel-card.list-view .stream-info {
-            margin-bottom: 15px;
-            font-size: 0.85rem;
-        }
-        
-        .viewers-count {
+        .meta-item {
             display: flex;
             align-items: center;
             gap: 5px;
-        }
-        
-        .stream-time {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .channel-actions {
-            margin-top: auto;
         }
         
         .watch-btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: var(--success-gradient);
             border: none;
             padding: 14px 28px;
-            border-radius: 25px;
+            border-radius: var(--border-radius-small);
             color: white;
             font-weight: 600;
             cursor: pointer;
@@ -388,49 +419,96 @@
             width: 100%;
             justify-content: center;
             font-size: 1rem;
+            position: relative;
+            overflow: hidden;
         }
         
-        .channel-card.list-view .watch-btn {
-            padding: 10px 20px;
-            font-size: 0.9rem;
-            width: auto;
-            min-width: 120px;
+        .watch-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .watch-btn:hover::before {
+            left: 100%;
         }
         
         .watch-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: var(--shadow-medium);
         }
         
-        .watch-btn.disabled {
-            background: #bdc3c7;
-            cursor: not-allowed;
-        }
-        
-        .watch-btn.disabled:hover {
-            transform: none;
-            box-shadow: none;
-        }
-        
-        .loading {
-            display: none;
+        /* Empty State */
+        .empty-section {
             text-align: center;
-            padding: 60px;
-            color: rgba(255, 255, 255, 0.8);
+            padding: 4rem 2rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius);
+            color: var(--text-light);
         }
         
-        .loading.show {
-            display: block;
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.5;
         }
         
-        .spinner {
+        .empty-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-subtitle {
+            font-size: 1rem;
+            opacity: 0.7;
+        }
+        
+        /* Loading */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .loading-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1.5rem;
             border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
             border-top: 3px solid white;
-            width: 50px;
-            height: 50px;
+            border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px auto;
         }
         
         @keyframes spin {
@@ -438,255 +516,260 @@
             100% { transform: rotate(360deg); }
         }
         
-        .empty-state {
-            text-align: center;
-            padding: 80px 20px;
-            color: rgba(255, 255, 255, 0.8);
-            display: none;
-        }
-        
-        .empty-state.show {
-            display: block;
-        }
-        
-        .empty-icon {
-            font-size: 5rem;
-            margin-bottom: 25px;
-            opacity: 0.5;
-        }
-        
-        .empty-title {
-            font-size: 1.8rem;
-            margin-bottom: 15px;
-        }
-        
-        .empty-subtitle {
-            font-size: 1.1rem;
-            opacity: 0.7;
-        }
-        
-        .contact-section {
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            padding: 30px;
-            margin-top: 40px;
-            text-align: center;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-            display: none;
-        }
-        
-        .contact-section.show {
-            display: block;
-        }
-        
-        .contact-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: #2c3e50;
-            margin-bottom: 20px;
+        /* Add Channel Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
             display: flex;
             align-items: center;
             justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal {
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            color: var(--text-light);
+            transform: scale(0.7);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-overlay.show .modal {
+            transform: scale(1);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
             gap: 10px;
         }
         
-        .contact-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .contact-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 24px;
-            border-radius: 25px;
-            text-decoration: none;
-            color: white;
-            font-weight: 600;
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--text-light);
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
             transition: all 0.3s ease;
         }
         
-        .contact-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(90deg);
         }
         
-        .contact-email {
-            background: linear-gradient(45deg, #3498db, #2980b9);
+        .modal-body {
+            margin-bottom: 1.5rem;
         }
         
-        .contact-whatsapp {
-            background: linear-gradient(45deg, #25d366, #128c7e);
+        .form-group {
+            margin-bottom: 1rem;
         }
         
-        .contact-request {
-            background: linear-gradient(45deg, #9b59b6, #8e44ad);
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
         }
         
-        .add-channel-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
-            border: none;
-            padding: 18px;
-            border-radius: 50%;
-            color: white;
-            font-size: 1.8rem;
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-small);
+            color: var(--text-light);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+        
+        .modal-footer {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--glass-border);
+            padding: 10px 20px;
+            border-radius: var(--border-radius-small);
+            color: var(--text-light);
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
-            z-index: 999;
         }
         
-        .add-channel-btn:hover {
-            transform: translateY(-3px) scale(1.1);
-            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
         }
         
-        .last-updated {
+        .btn-primary {
+            background: var(--success-gradient);
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--border-radius-small);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+        
+        /* Footer */
+        .footer {
             text-align: center;
+            padding: 2rem;
             color: rgba(255, 255, 255, 0.7);
             font-size: 0.9rem;
-            margin-top: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            margin-top: 3rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-top: 1px solid var(--glass-border);
         }
         
-        .error-message {
-            text-align: center;
-            padding: 60px 20px;
-            color: rgba(255, 255, 255, 0.8);
-            background: rgba(231, 76, 60, 0.1);
-            border: 1px solid rgba(231, 76, 60, 0.3);
-            border-radius: 15px;
-            margin: 20px 0;
-        }
-        
-        .error-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            opacity: 0.5;
-        }
-        
-        .error-title {
-            font-size: 1.5rem;
-            margin-bottom: 15px;
-        }
-        
-        .error-subtitle {
-            font-size: 1rem;
-            opacity: 0.7;
-            margin-bottom: 20px;
-        }
-        
-        .retry-btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            border: none;
-            padding: 12px 24px;
-            border-radius: 25px;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .retry-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        .api-status {
-            position: fixed;
-            bottom: 90px;
-            right: 30px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 10px 15px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #666;
-            z-index: 999;
-            display: none;
-        }
-        
-        .api-status.show {
-            display: block;
-        }
-        
+        /* Responsive */
         @media (max-width: 768px) {
+            .header-container {
+                padding: 0 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
             .channels-grid {
                 grid-template-columns: 1fr;
             }
             
-            .controls-bar {
+            .section-header {
                 flex-direction: column;
-                gap: 20px;
-                align-items: stretch;
+                align-items: flex-start;
+                gap: 1rem;
             }
             
-            .filter-controls {
-                justify-content: center;
-                flex-wrap: wrap;
+            .section-title {
+                font-size: 1.5rem;
             }
             
-            .search-box {
-                width: 100%;
+            .modal {
+                margin: 1rem;
+                padding: 1.5rem;
             }
             
-            .channel-card.list-view {
+            .modal-footer {
                 flex-direction: column;
-                height: auto;
-            }
-            
-            .channel-card.list-view .channel-thumbnail {
-                width: 100%;
-                height: 180px;
-            }
-            
-            .nav-controls {
-                flex-wrap: wrap;
-                gap: 10px;
-            }
-            
-            .contact-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            .contact-btn {
-                width: 200px;
-                justify-content: center;
             }
         }
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="logo" id="siteHeader">
-                <i class="fas fa-broadcast-tower"></i>
-                <div class="site-title">
-                    <div class="site-name" id="siteName">مراقب البثوث المحسن</div>
-                    <div class="site-description" id="siteDescription">نظام محسن لمراقبة البثوث المباشرة</div>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h3>جاري تحميل القنوات...</h3>
+            <p>يرجى الانتظار</p>
+        </div>
+    </div>
+
+    <!-- Add Channel Modal -->
+    <div class="modal-overlay" id="addChannelModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-plus-circle"></i>
+                    إضافة قناة جديدة
+                </h3>
+                <button class="modal-close" onclick="closeAddChannelModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">رابط القناة أو معرف القناة</label>
+                    <input type="text" class="form-input" id="channelUrlInput" 
+                           placeholder="https://youtube.com/@channelname أو @channelname">
+                    <small style="color: rgba(255,255,255,0.6); margin-top: 0.5rem; display: block;">
+                        يمكنك إدخال رابط كامل للقناة أو المعرف فقط (مثل @channelname)
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">اسم القناة (اختياري)</label>
+                    <input type="text" class="form-input" id="channelNameInput" 
+                           placeholder="اسم مخصص للقناة">
                 </div>
             </div>
-            <div class="nav-controls">
-                <button class="view-toggle active" data-view="grid" onclick="toggleView('grid')">
-                    <i class="fas fa-th-large"></i>
-                    <span>شبكة</span>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeAddChannelModal()">إلغاء</button>
+                <button class="btn-primary" onclick="submitChannelRequest()">
+                    <i class="fas fa-paper-plane"></i>
+                    إرسال الطلب
                 </button>
-                <button class="view-toggle" data-view="list" onclick="toggleView('list')">
-                    <i class="fas fa-list"></i>
-                    <span>قائمة</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo" id="siteHeader">
+                <i class="fas fa-broadcast-tower"></i>
+                <div>
+                    <div id="siteName">مراقب البثوث المباشرة المحسن</div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="add-channel-btn" onclick="openAddChannelModal()">
+                    <i class="fas fa-plus"></i>
+                    إضافة قناة
                 </button>
                 <button class="refresh-btn" onclick="refreshChannels()" id="refreshBtn">
                     <i class="fas fa-sync-alt"></i>
@@ -694,75 +777,81 @@
                 </button>
             </div>
         </div>
-    </nav>
+    </header>
 
-    <div class="container">
-        <div class="controls-bar">
-            <div class="filter-controls">
-                <button class="filter-btn active" onclick="filterChannels('all')">
-                    <i class="fas fa-globe"></i>
-                    الكل
-                </button>
-                <button class="filter-btn" onclick="filterChannels('live')">
-                    <i class="fas fa-circle" style="color: #e74c3c;"></i>
-                    مباشر
-                </button>
-                <button class="filter-btn" onclick="filterChannels('upcoming')">
-                    <i class="fas fa-clock" style="color: #f39c12;"></i>
-                    قريباً
-                </button>
-                <button class="filter-btn" onclick="filterChannels('offline')">
-                    <i class="fas fa-pause-circle" style="color: #95a5a6;"></i>
-                    غير متاح
-                </button>
+    <!-- Main Container -->
+    <main class="container">
+        <!-- Live Channels Section -->
+        <section class="section live" id="liveSection">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-circle"></i>
+                    البث المباشر
+                </h2>
+                <div class="section-count" id="liveCount">0 قناة</div>
             </div>
-            <div>
-                <input type="text" class="search-box" placeholder="ابحث عن قناة..." onkeyup="searchChannels(this.value)">
-            </div>
-        </div>
-
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p>جاري تحميل القنوات...</p>
-        </div>
-
-        <div class="empty-state" id="emptyState">
-            <div class="empty-icon">
-                <i class="fas fa-tv"></i>
-            </div>
-            <h3 class="empty-title">لا توجد قنوات</h3>
-            <p class="empty-subtitle">لم يتم العثور على أي قنوات مطابقة</p>
-        </div>
-
-        <div id="errorContainer"></div>
-
-        <div class="channels-grid" id="channels">
-            <!-- سيتم ملؤها بالجافاسكريبت -->
-        </div>
-
-        <div class="contact-section" id="contactSection">
-            <h3 class="contact-title">
-                <i class="fas fa-envelope"></i>
-                للتواصل معنا
-            </h3>
-            <div class="contact-buttons" id="contactButtons">
+            <div class="channels-grid" id="liveChannels">
                 <!-- سيتم ملؤها بالجافاسكريبت -->
             </div>
-        </div>
+            <div class="empty-section" id="liveEmpty" style="display: none;">
+                <div class="empty-icon">
+                    <i class="fas fa-broadcast-tower"></i>
+                </div>
+                <h3 class="empty-title">لا يوجد بث مباشر حالياً</h3>
+                <p class="empty-subtitle">لم يتم العثور على أي قنوات تبث مباشرة في الوقت الحالي</p>
+            </div>
+        </section>
 
-        <div class="last-updated" id="lastUpdated">
-            <!-- سيتم ملؤها بالجافاسكريبت -->
-        </div>
-    </div>
+        <!-- Upcoming Channels Section -->
+        <section class="section upcoming" id="upcomingSection">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-clock"></i>
+                    البث القادم
+                </h2>
+                <div class="section-count" id="upcomingCount">0 قناة</div>
+            </div>
+            <div class="channels-grid" id="upcomingChannels">
+                <!-- سيتم ملؤها بالجافاسكريبت -->
+            </div>
+            <div class="empty-section" id="upcomingEmpty" style="display: none;">
+                <div class="empty-icon">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <h3 class="empty-title">لا يوجد بث مجدول</h3>
+                <p class="empty-subtitle">لا توجد قنوات لديها بث مجدول في المستقبل القريب</p>
+            </div>
+        </section>
 
-    <button class="add-channel-btn" onclick="requestChannel()" title="طلب إضافة قناة">
-        <i class="fas fa-plus"></i>
-    </button>
+        <!-- Offline Channels Section -->
+        <section class="section offline" id="offlineSection">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-pause-circle"></i>
+                    غير متاح حالياً
+                </h2>
+                <div class="section-count" id="offlineCount">0 قناة</div>
+            </div>
+            <div class="channels-grid" id="offlineChannels">
+                <!-- سيتم ملؤها بالجافاسكريبت -->
+            </div>
+            <div class="empty-section" id="offlineEmpty" style="display: none;">
+                <div class="empty-icon">
+                    <i class="fas fa-tv"></i>
+                </div>
+                <h3 class="empty-title">لا توجد قنوات غير متاحة</h3>
+                <p class="empty-subtitle">جميع القنوات متاحة حالياً</p>
+            </div>
+        </section>
+    </main>
 
-    <div class="api-status" id="apiStatus">
-        <i class="fas fa-clock"></i>
-        <span id="apiStatusText">جاري التحميل...</span>
-    </div>
+    <!-- Footer -->
+    <footer class="footer">
+        <p id="lastUpdated">
+            <i class="fas fa-clock"></i>
+            آخر تحديث: جاري التحميل...
+        </p>
+    </footer>
 
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -781,13 +870,7 @@
         // متغيرات عامة
         let db;
         let channels = [];
-        let filteredChannels = [];
-        let currentView = 'grid';
-        let currentFilter = 'all';
-        let currentSearch = '';
         let youtubeApiKey = '';
-        let contactInfo = {};
-        let siteSettings = {};
         let isLoading = false;
         let apiCallCount = 0;
         let lastApiReset = Date.now();
@@ -805,104 +888,8 @@
                 return true;
             } catch (error) {
                 console.error('خطأ في تهيئة Firebase:', error);
-                showError('خطأ في الاتصال بقاعدة البيانات');
+                showNotification('خطأ في الاتصال بقاعدة البيانات', 'error');
                 return false;
-            }
-        }
-        
-        // تحميل إعدادات الموقع
-        async function loadSiteSettings() {
-            try {
-                const docSnap = await db.collection('settings').doc('site').get();
-                if (docSnap.exists) {
-                    siteSettings = docSnap.data();
-                    updateSiteUI();
-                }
-            } catch (error) {
-                console.error('خطأ في تحميل إعدادات الموقع:', error);
-            }
-        }
-        
-        // تحديث واجهة الموقع
-        function updateSiteUI() {
-            if (siteSettings.siteName) {
-                document.getElementById('siteName').textContent = siteSettings.siteName;
-                document.getElementById('pageTitle').textContent = siteSettings.siteName;
-                document.title = siteSettings.siteName;
-            }
-            
-            if (siteSettings.siteDescription) {
-                document.getElementById('siteDescription').textContent = siteSettings.siteDescription;
-            }
-            
-            if (siteSettings.siteLogo) {
-                const logo = document.getElementById('siteHeader');
-                const existingImg = logo.querySelector('img');
-                if (existingImg) {
-                    existingImg.remove();
-                }
-                
-                const img = document.createElement('img');
-                img.src = siteSettings.siteLogo;
-                img.alt = 'شعار الموقع';
-                img.style.maxHeight = '40px';
-                img.style.borderRadius = '8px';
-                logo.insertBefore(img, logo.firstChild);
-            }
-        }
-        
-        // تحميل معلومات التواصل
-        async function loadContactInfo() {
-            try {
-                const docSnap = await db.collection('settings').doc('contact').get();
-                if (docSnap.exists) {
-                    contactInfo = docSnap.data();
-                    updateContactSection();
-                }
-            } catch (error) {
-                console.error('خطأ في تحميل معلومات التواصل:', error);
-            }
-        }
-        
-        // تحديث قسم التواصل
-        function updateContactSection() {
-            const contactSection = document.getElementById('contactSection');
-            const contactButtons = document.getElementById('contactButtons');
-            
-            let buttonsHtml = '';
-            let hasContacts = false;
-            
-            if (contactInfo.email) {
-                buttonsHtml += `
-                    <a href="mailto:${contactInfo.email}" class="contact-btn contact-email">
-                        <i class="fas fa-envelope"></i>
-                        البريد الإلكتروني
-                    </a>
-                `;
-                hasContacts = true;
-            }
-            
-            if (contactInfo.whatsapp) {
-                buttonsHtml += `
-                    <a href="https://wa.me/${contactInfo.whatsapp}" target="_blank" class="contact-btn contact-whatsapp">
-                        <i class="fab fa-whatsapp"></i>
-                        واتساب
-                    </a>
-                `;
-                hasContacts = true;
-            }
-            
-            buttonsHtml += `
-                <button onclick="requestChannel()" class="contact-btn contact-request">
-                    <i class="fas fa-plus-circle"></i>
-                    طلب إضافة قناة
-                </button>
-            `;
-            
-            contactButtons.innerHTML = buttonsHtml;
-            
-            if (hasContacts || true) {
-                contactSection.classList.add('show');
             }
         }
         
@@ -925,42 +912,13 @@
             const now = Date.now();
             
             // إعادة تعيين العداد كل ساعة
-            if (now - lastApiReset > 3600000) { // ساعة واحدة
+            if (now - lastApiReset > 3600000) {
                 apiCallCount = 0;
                 lastApiReset = now;
             }
             
-            // تحديث حالة API
-            updateApiStatus();
-            
             // إذا تجاوزنا 80% من الحد الأقصى، نستخدم البيانات المحفوظة فقط
-            return apiCallCount < 800; // 80% من 1000 طلب في الساعة
-        }
-        
-        // تحديث حالة API
-        function updateApiStatus() {
-            const status = document.getElementById('apiStatus');
-            const statusText = document.getElementById('apiStatusText');
-            
-            const remaining = Math.max(0, 1000 - apiCallCount);
-            const percentage = Math.round((remaining / 1000) * 100);
-            
-            statusText.textContent = `API: ${remaining} طلب متبقي (${percentage}%)`;
-            
-            if (percentage > 50) {
-                status.style.background = 'rgba(46, 204, 113, 0.9)';
-                status.style.color = 'white';
-            } else if (percentage > 20) {
-                status.style.background = 'rgba(243, 156, 18, 0.9)';
-                status.style.color = 'white';
-            } else {
-                status.style.background = 'rgba(231, 76, 60, 0.9)';
-                status.style.color = 'white';
-            }
-            
-            if (apiCallCount > 0) {
-                status.classList.add('show');
-            }
+            return apiCallCount < 800;
         }
         
         // فحص الكاش
@@ -984,6 +942,18 @@
         function extractChannelId(url) {
             if (!url) return null;
             
+            // إزالة المسافات
+            url = url.trim();
+            
+            // إذا كان المدخل يبدأ بـ @ فهو handle
+            if (url.startsWith('@')) {
+                return {
+                    value: url.substring(1),
+                    type: 'handle',
+                    isChannelId: false
+                };
+            }
+            
             const patterns = [
                 { regex: /youtube\.com\/channel\/([a-zA-Z0-9_-]+)/, type: 'channel_id' },
                 { regex: /youtube\.com\/c\/([a-zA-Z0-9_-]+)/, type: 'custom_url' },
@@ -1004,7 +974,7 @@
             return null;
         }
         
-        // جلب بيانات القناة من YouTube API مع إدارة الحدود
+        // جلب بيانات القناة من YouTube API
         async function fetchChannelData(channelInfo) {
             if (!youtubeApiKey || !channelInfo) return null;
             
@@ -1012,19 +982,16 @@
             const cacheKey = `channel_${channelInfo.value}`;
             const cachedData = getCachedData(cacheKey);
             if (cachedData) {
-                console.log('استخدام البيانات المحفوظة للقناة:', channelInfo.value);
                 return cachedData;
             }
             
             // فحص حدود API
             if (!checkApiLimits()) {
-                console.log('تم الوصول لحد API، استخدام البيانات المحفوظة');
                 return null;
             }
             
             try {
-                apiCallCount += 3; // كل طلب يستهلك حوالي 3 وحدات
-                updateApiStatus();
+                apiCallCount += 3;
                 
                 let apiUrl;
                 
@@ -1033,7 +1000,7 @@
                 } else {
                     let searchUrl;
                     if (channelInfo.type === 'handle') {
-                        searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=${channelInfo.value}&key=${youtubeApiKey}&maxResults=1`;
+                        searchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&q=@${channelInfo.value}&key=${youtubeApiKey}&maxResults=1`;
                     } else if (channelInfo.type === 'username') {
                         searchUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&forUsername=${channelInfo.value}&key=${youtubeApiKey}`;
                     } else {
@@ -1043,18 +1010,13 @@
                     const searchResponse = await fetch(searchUrl);
                     const searchData = await searchResponse.json();
                     
-                    if (searchData.error) {
-                        console.error('خطأ في البحث:', searchData.error);
+                    if (searchData.error || !searchData.items || searchData.items.length === 0) {
                         return null;
                     }
                     
-                    if (searchData.items && searchData.items.length > 0) {
-                        const channelId = searchData.items[0].snippet?.channelId || searchData.items[0].id;
-                        if (channelId) {
-                            apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${youtubeApiKey}`;
-                        } else {
-                            return null;
-                        }
+                    const channelId = searchData.items[0].snippet?.channelId || searchData.items[0].id;
+                    if (channelId) {
+                        apiUrl = `https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&id=${channelId}&key=${youtubeApiKey}`;
                     } else {
                         return null;
                     }
@@ -1063,68 +1025,52 @@
                 const response = await fetch(apiUrl);
                 const data = await response.json();
                 
-                if (data.error) {
-                    console.error('خطأ في YouTube API:', data.error);
+                if (data.error || !data.items || data.items.length === 0) {
                     return null;
                 }
                 
-                if (data.items && data.items.length > 0) {
-                    const channelData = data.items[0];
-                    const result = {
-                        id: channelData.id,
-                        title: channelData.snippet.title,
-                        thumbnail: channelData.snippet.thumbnails.medium?.url,
-                        description: channelData.snippet.description,
-                        subscriberCount: channelData.statistics?.subscriberCount
-                    };
-                    
-                    // حفظ في الكاش
-                    setCachedData(cacheKey, result);
-                    
-                    return result;
-                }
+                const channelData = data.items[0];
+                const result = {
+                    id: channelData.id,
+                    title: channelData.snippet.title,
+                    thumbnail: channelData.snippet.thumbnails.medium?.url,
+                    description: channelData.snippet.description,
+                    subscriberCount: channelData.statistics?.subscriberCount
+                };
                 
-                return null;
+                setCachedData(cacheKey, result);
+                return result;
+                
             } catch (error) {
                 console.error('خطأ في جلب بيانات القناة:', error);
                 return null;
             }
         }
         
-        // البحث عن البث المباشر مع إدارة الحدود
+        // البحث عن البث المباشر
         async function fetchLiveStreamData(channelId) {
             if (!youtubeApiKey || !channelId) {
                 return { status: 'offline' };
             }
             
-            // فحص الكاش أولاً
             const cacheKey = `live_${channelId}`;
             const cachedData = getCachedData(cacheKey);
             if (cachedData) {
-                console.log('استخدام بيانات البث المحفوظة للقناة:', channelId);
                 return cachedData;
             }
             
-            // فحص حدود API
             if (!checkApiLimits()) {
-                console.log('تم الوصول لحد API، تخطي فحص البث المباشر');
                 return { status: 'offline' };
             }
             
             try {
-                apiCallCount += 5; // البحث عن البث المباشر يستهلك وحدات أكثر
-                updateApiStatus();
+                apiCallCount += 5;
                 
                 // البحث عن البث المباشر
-                const liveSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&eventType=live&key=${youtubeApiKey}&maxResults=3`;
+                const liveSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&eventType=live&key=${youtubeApiKey}&maxResults=1`;
                 
                 const liveResponse = await fetch(liveSearchUrl);
                 const liveData = await liveResponse.json();
-                
-                if (liveData.error) {
-                    console.error('خطأ في API البث المباشر:', liveData.error);
-                    return { status: 'error', error: liveData.error.message };
-                }
                 
                 if (liveData.items && liveData.items.length > 0) {
                     const liveStream = liveData.items[0];
@@ -1145,11 +1091,11 @@
                                 startTime: videoDetails.liveStreamingDetails?.actualStartTime
                             };
                             
-                            // حفظ في الكاش لمدة دقيقتين فقط (البث المباشر يتغير سريعاً)
+                            // حفظ في الكاش لمدة دقيقتين فقط
                             channelCache.set(cacheKey, {
                                 data: result,
                                 timestamp: Date.now(),
-                                expiry: 2 * 60 * 1000 // دقيقتان
+                                expiry: 2 * 60 * 1000
                             });
                             
                             return result;
@@ -1172,9 +1118,8 @@
                 // البحث عن البث القادم
                 if (checkApiLimits()) {
                     apiCallCount += 3;
-                    updateApiStatus();
                     
-                    const upcomingSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&eventType=upcoming&key=${youtubeApiKey}&maxResults=3`;
+                    const upcomingSearchUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&type=video&eventType=upcoming&key=${youtubeApiKey}&maxResults=1`;
                     
                     const upcomingResponse = await fetch(upcomingSearchUrl);
                     const upcomingData = await upcomingResponse.json();
@@ -1226,18 +1171,16 @@
             }
         }
         
-        // تحميل القنوات مع التحديث التدريجي
+        // تحميل القنوات
         async function loadChannels() {
             if (isLoading) return;
             isLoading = true;
             
             showLoading(true);
-            clearError();
             
             try {
                 console.log('بدء تحميل القنوات...');
                 
-                // تحميل مفتاح API أولاً
                 await loadYouTubeApiKey();
                 
                 const snapshot = await db.collection('channels')
@@ -1249,14 +1192,12 @@
                 if (!snapshot.empty) {
                     console.log(`تم العثور على ${snapshot.docs.length} قناة`);
                     
-                    // معالجة القنوات بشكل متدرج لتوفير API
                     const channelDocs = snapshot.docs;
-                    const batchSize = 3; // معالجة 3 قنوات في كل مرة
+                    const batchSize = 3;
                     
                     for (let i = 0; i < channelDocs.length; i += batchSize) {
                         const batch = channelDocs.slice(i, i + batchSize);
                         
-                        // معالجة المجموعة الحالية
                         const batchPromises = batch.map(async (doc) => {
                             const channelData = { id: doc.id, ...doc.data() };
                             return await processChannel(channelData);
@@ -1265,10 +1206,8 @@
                         const processedChannels = await Promise.all(batchPromises);
                         channels.push(...processedChannels);
                         
-                        // تحديث العرض تدريجياً
-                        applyFilters();
+                        renderChannels();
                         
-                        // توقف بين المجموعات لتجنب تجاوز حدود API
                         if (i + batchSize < channelDocs.length) {
                             await new Promise(resolve => setTimeout(resolve, 2000));
                         }
@@ -1278,47 +1217,39 @@
                 }
                 
                 console.log('تم تحميل جميع القنوات بنجاح');
-                applyFilters();
+                renderChannels();
                 updateLastUpdated();
                 
             } catch (error) {
                 console.error('خطأ في تحميل القنوات:', error);
-                showError('حدث خطأ في تحميل القنوات. يرجى المحاولة مرة أخرى.');
+                showNotification('حدث خطأ في تحميل القنوات', 'error');
             } finally {
                 showLoading(false);
                 isLoading = false;
             }
         }
         
-        // معالجة قناة واحدة مع إدارة API
+        // معالجة قناة واحدة
         async function processChannel(channelData) {
             try {
                 const channelInfo = extractChannelId(channelData.url);
                 
                 if (channelInfo && youtubeApiKey) {
-                    // الحصول على بيانات القناة
                     const apiChannelData = await fetchChannelData(channelInfo);
                     if (apiChannelData) {
-                        // دمج البيانات من API
                         Object.assign(channelData, {
                             title: apiChannelData.title,
                             thumbnail: apiChannelData.thumbnail,
                             description: apiChannelData.description
                         });
                         
-                        // البحث عن البث المباشر
                         const liveData = await fetchLiveStreamData(apiChannelData.id);
                         Object.assign(channelData, liveData);
                     } else {
                         channelData.status = channelData.status || 'offline';
-                        if (!checkApiLimits()) {
-                            channelData.error = 'تم الوصول لحد API';
-                        } else {
-                            channelData.error = 'فشل في جلب بيانات القناة';
-                        }
+                        channelData.error = 'فشل في جلب بيانات القناة';
                     }
                 } else {
-                    // استخدام البيانات المحفوظة
                     channelData.status = channelData.status || 'offline';
                     if (!channelInfo) {
                         channelData.error = 'رابط غير صحيح';
@@ -1341,106 +1272,75 @@
         
         // عرض/إخفاء شاشة التحميل
         function showLoading(show) {
-            const loading = document.getElementById('loading');
-            const channels = document.getElementById('channels');
-            const emptyState = document.getElementById('emptyState');
-            
-            if (show) {
-                loading.classList.add('show');
-                channels.style.display = 'none';
-                emptyState.classList.remove('show');
-            } else {
-                loading.classList.remove('show');
-                channels.style.display = 'grid';
-            }
+            const overlay = document.getElementById('loadingOverlay');
+            overlay.classList.toggle('show', show);
         }
         
-        // عرض رسالة خطأ
-        function showError(message) {
-            const errorContainer = document.getElementById('errorContainer');
-            errorContainer.innerHTML = `
-                <div class="error-message">
-                    <div class="error-icon">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <h3 class="error-title">حدث خطأ</h3>
-                    <p class="error-subtitle">${message}</p>
-                    <button class="retry-btn" onclick="initializeApp()">
-                        <i class="fas fa-redo"></i>
-                        إعادة المحاولة
-                    </button>
-                </div>
-            `;
-        }
-        
-        // مسح رسائل الخطأ
-        function clearError() {
-            document.getElementById('errorContainer').innerHTML = '';
-        }
-        
-        // تطبيق الفلاتر
-        function applyFilters() {
-            filteredChannels = channels.filter(channel => {
-                const matchesFilter = currentFilter === 'all' || channel.status === currentFilter;
-                const matchesSearch = !currentSearch || 
-                    (channel.title || channel.name || '').toLowerCase().includes(currentSearch.toLowerCase()) ||
-                    (channel.streamTitle || '').toLowerCase().includes(currentSearch.toLowerCase());
-                return matchesFilter && matchesSearch;
-            });
-            
-            renderChannels();
-        }
-        
-        // عرض القنوات
+        // عرض القنوات في الأقسام المناسبة
         function renderChannels() {
-            const container = document.getElementById('channels');
-            const emptyState = document.getElementById('emptyState');
+            const liveChannels = channels.filter(ch => ch.status === 'live');
+            const upcomingChannels = channels.filter(ch => ch.status === 'upcoming');
+            const offlineChannels = channels.filter(ch => ch.status === 'offline' || ch.status === 'error' || !ch.status);
             
-            if (filteredChannels.length === 0) {
+            renderChannelSection('live', liveChannels);
+            renderChannelSection('upcoming', upcomingChannels);
+            renderChannelSection('offline', offlineChannels);
+        }
+        
+        // عرض قسم محدد
+        function renderChannelSection(sectionType, channelsList) {
+            const container = document.getElementById(`${sectionType}Channels`);
+            const emptyState = document.getElementById(`${sectionType}Empty`);
+            const countElement = document.getElementById(`${sectionType}Count`);
+            
+            // تحديث العداد
+            countElement.textContent = `${channelsList.length} قناة`;
+            
+            if (channelsList.length === 0) {
                 container.style.display = 'none';
-                emptyState.classList.add('show');
+                emptyState.style.display = 'block';
                 return;
             }
             
-            emptyState.classList.remove('show');
             container.style.display = 'grid';
+            emptyState.style.display = 'none';
             container.innerHTML = '';
             
-            filteredChannels.forEach(channel => {
+            channelsList.forEach(channel => {
                 const channelElement = createChannelElement(channel);
                 container.appendChild(channelElement);
             });
         }
         
-        // إنشاء عنصر القناة مع تحسين العرض
+        // إنشاء عنصر القناة
         function createChannelElement(channel) {
             const div = document.createElement('div');
-            div.className = `channel-card ${currentView === 'list' ? 'list-view' : ''}`;
+            div.className = 'channel-card';
             
             const statusClass = `status-${channel.status || 'offline'}`;
             const statusText = getStatusText(channel.status);
             const statusIcon = getStatusIcon(channel.status);
             
             const thumbnailUrl = channel.streamThumbnail || channel.thumbnail || '';
-            const streamTitle = channel.streamTitle || channel.error || 'لا يوجد بث حالياً';
             const channelTitle = channel.title || channel.name || 'قناة غير محددة';
+            const streamTitle = channel.streamTitle || channel.error || 'لا يوجد بث حالياً';
             const watchUrl = channel.streamUrl || channel.url || '#';
             
-            let additionalInfo = '';
+            let metaInfo = '';
             if (channel.status === 'live') {
                 const viewers = channel.viewerCount ? formatNumber(channel.viewerCount) : '';
                 const duration = channel.startTime ? calculateStreamDuration(channel.startTime) : '';
-                additionalInfo = `
-                    <div class="stream-info">
-                        ${viewers ? `<div class="viewers-count"><i class="fas fa-eye"></i> ${viewers} مشاهد</div>` : ''}
-                        ${duration ? `<div class="stream-time"><i class="fas fa-clock"></i> ${duration}</div>` : ''}
+                metaInfo = `
+                    <div class="stream-meta">
+                        ${viewers ? `<div class="meta-item"><i class="fas fa-eye"></i> ${viewers}</div>` : ''}
+                        ${duration ? `<div class="meta-item"><i class="fas fa-clock"></i> ${duration}</div>` : ''}
                     </div>
                 `;
             } else if (channel.status === 'upcoming' && channel.scheduledStartTime) {
                 const scheduledTime = formatScheduledTime(channel.scheduledStartTime);
-                additionalInfo = `
-                    <div class="stream-info">
-                        <div class="stream-time"><i class="fas fa-calendar"></i> ${scheduledTime}</div>
+                metaInfo = `
+                    <div class="stream-meta">
+                        <div class="meta-item"><i class="fas fa-calendar"></i> ${scheduledTime}</div>
                     </div>
                 `;
             }
@@ -1457,67 +1357,17 @@
                     </div>
                 </div>
                 <div class="channel-info">
-                    <h4 class="channel-name">${channelTitle}</h4>
+                    <h3 class="channel-name">${channelTitle}</h3>
                     <p class="stream-title">${streamTitle}</p>
-                    ${additionalInfo}
-                    <div class="channel-actions">
-                        <a href="${watchUrl}" target="_blank" class="watch-btn ${channel.status === 'error' || watchUrl === '#' ? 'disabled' : ''}">
-                            <i class="fas fa-external-link-alt"></i>
-                            ${getButtonText(channel.status)}
-                        </a>
-                    </div>
+                    ${metaInfo}
+                    <a href="${watchUrl}" target="_blank" class="watch-btn ${channel.status === 'error' || watchUrl === '#' ? 'disabled' : ''}">
+                        <i class="fas fa-external-link-alt"></i>
+                        ${getButtonText(channel.status)}
+                    </a>
                 </div>
             `;
             
             return div;
-        }
-        
-        // تبديل وضع العرض
-        function toggleView(view) {
-            currentView = view;
-            
-            // تحديث أزرار العرض
-            document.querySelectorAll('.view-toggle').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.querySelector(`[data-view="${view}"]`).classList.add('active');
-            
-            // تحديث الشبكة
-            const container = document.getElementById('channels');
-            if (view === 'list') {
-                container.classList.add('list-view');
-            } else {
-                container.classList.remove('list-view');
-            }
-            
-            // إعادة عرض القنوات
-            renderChannels();
-        }
-        
-        // فلترة القنوات
-        function filterChannels(filter) {
-            currentFilter = filter;
-            
-            // تحديث أزرار الفلتر
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // العثور على الزر المضغوط وتفعيله
-            const activeBtn = Array.from(document.querySelectorAll('.filter-btn')).find(btn => 
-                btn.onclick.toString().includes(`'${filter}'`)
-            );
-            if (activeBtn) {
-                activeBtn.classList.add('active');
-            }
-            
-            applyFilters();
-        }
-        
-        // البحث في القنوات
-        function searchChannels(query) {
-            currentSearch = query.trim();
-            applyFilters();
         }
         
         // تحديث وقت آخر تحديث
@@ -1529,7 +1379,7 @@
             `;
         }
         
-        // تحديث القنوات مع إدارة API
+        // تحديث القنوات
         async function refreshChannels() {
             const refreshBtn = document.getElementById('refreshBtn');
             const icon = refreshBtn.querySelector('i');
@@ -1542,9 +1392,9 @@
             text.textContent = 'جاري التحديث...';
             
             try {
-                // مسح الكاش القديم
                 channelCache.clear();
                 await loadChannels();
+                showNotification('تم تحديث القنوات بنجاح', 'success');
             } finally {
                 refreshBtn.disabled = false;
                 icon.style.animation = '';
@@ -1552,39 +1402,111 @@
             }
         }
         
-        // طلب إضافة قناة
-        function requestChannel() {
-            const name = prompt('اسم القناة:');
-            if (!name || !name.trim()) return;
+        // فتح نافذة إضافة قناة
+        function openAddChannelModal() {
+            const modal = document.getElementById('addChannelModal');
+            modal.classList.add('show');
+            document.getElementById('channelUrlInput').focus();
+        }
+        
+        // إغلاق نافذة إضافة قناة
+        function closeAddChannelModal() {
+            const modal = document.getElementById('addChannelModal');
+            modal.classList.remove('show');
+            document.getElementById('channelUrlInput').value = '';
+            document.getElementById('channelNameInput').value = '';
+        }
+        
+        // إرسال طلب إضافة قناة
+        async function submitChannelRequest() {
+            const urlInput = document.getElementById('channelUrlInput');
+            const nameInput = document.getElementById('channelNameInput');
             
-            const url = prompt('رابط القناة على يوتيوب:');
-            if (!url || !url.trim()) return;
+            const url = urlInput.value.trim();
+            const name = nameInput.value.trim();
             
-            // التحقق من صحة الرابط
-            if (!url.includes('youtube.com')) {
-                alert('يرجى إدخال رابط صحيح لقناة يوتيوب');
+            if (!url) {
+                showNotification('يرجى إدخال رابط القناة أو معرفها', 'warning');
+                urlInput.focus();
                 return;
             }
             
-            const email = prompt('بريدك الإلكتروني (اختياري):') || '';
-            
-            // إرسال الطلب
-            if (!db) {
-                alert('خطأ في الاتصال بقاعدة البيانات');
+            // التحقق من صحة الرابط أو المعرف
+            const channelInfo = extractChannelId(url);
+            if (!channelInfo) {
+                showNotification('يرجى إدخال رابط صحيح لقناة يوتيوب أو معرف القناة (مثل @channelname)', 'warning');
+                urlInput.focus();
                 return;
             }
             
-            db.collection('requests').add({
-                name: name.trim(),
-                url: url.trim(),
-                email: email.trim(),
-                timestamp: new Date()
-            }).then(() => {
-                alert('تم إرسال طلبك بنجاح! سيتم مراجعته قريباً.');
-            }).catch(error => {
+            try {
+                // إضافة البيانات إلى قاعدة البيانات
+                await db.collection('requests').add({
+                    url: url,
+                    name: name || '',
+                    timestamp: new Date(),
+                    status: 'pending'
+                });
+                
+                showNotification('تم إرسال طلبك بنجاح! سيتم مراجعته قريباً.', 'success');
+                closeAddChannelModal();
+                
+            } catch (error) {
                 console.error('خطأ في إرسال الطلب:', error);
-                alert('حدث خطأ في إرسال الطلب. يرجى المحاولة مرة أخرى.');
-            });
+                showNotification('حدث خطأ في إرسال الطلب. يرجى المحاولة مرة أخرى.', 'error');
+            }
+        }
+        
+        // عرض الإشعارات
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--glass-bg);
+                backdrop-filter: blur(25px);
+                -webkit-backdrop-filter: blur(25px);
+                border: 1px solid var(--glass-border);
+                border-radius: var(--border-radius-small);
+                padding: 1rem 1.5rem;
+                color: white;
+                font-weight: 600;
+                z-index: 10000;
+                transform: translateX(100%);
+                transition: transform 0.3s ease;
+                max-width: 350px;
+            `;
+            
+            if (type === 'success') {
+                notification.style.borderLeftColor = '#2ecc71';
+                notification.innerHTML = `<i class="fas fa-check-circle" style="color: #2ecc71; margin-left: 8px;"></i>${message}`;
+            } else if (type === 'error') {
+                notification.style.borderLeftColor = '#e74c3c';
+                notification.innerHTML = `<i class="fas fa-exclamation-circle" style="color: #e74c3c; margin-left: 8px;"></i>${message}`;
+            } else if (type === 'warning') {
+                notification.style.borderLeftColor = '#f39c12';
+                notification.innerHTML = `<i class="fas fa-exclamation-triangle" style="color: #f39c12; margin-left: 8px;"></i>${message}`;
+            } else {
+                notification.style.borderLeftColor = '#3498db';
+                notification.innerHTML = `<i class="fas fa-info-circle" style="color: #3498db; margin-left: 8px;"></i>${message}`;
+            }
+            
+            document.body.appendChild(notification);
+            
+            // عرض الإشعار
+            setTimeout(() => {
+                notification.style.transform = 'translateX(0)';
+            }, 100);
+            
+            // إخفاء الإشعار
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 4000);
         }
         
         // دوال مساعدة
@@ -1684,22 +1606,15 @@
             }
             
             try {
-                // تحميل الإعدادات
-                await Promise.all([
-                    loadSiteSettings(),
-                    loadContactInfo()
-                ]);
-                
                 // تحميل القنوات
                 await loadChannels();
                 
                 console.log('تم تهيئة التطبيق بنجاح');
                 
-                // تحديث دوري كل 5 دقائق (بدلاً من 3 لتوفير API)
+                // تحديث دوري كل 5 دقائق
                 setInterval(async () => {
                     if (!isLoading && checkApiLimits()) {
                         console.log('تحديث دوري...');
-                        // تحديث القنوات النشطة فقط
                         await loadActiveChannels();
                     }
                 }, 300000); // 5 دقائق
@@ -1711,7 +1626,7 @@
                 
             } catch (error) {
                 console.error('خطأ في تهيئة التطبيق:', error);
-                showError('فشل في تهيئة التطبيق. يرجى إعادة تحميل الصفحة.');
+                showNotification('فشل في تهيئة التطبيق. يرجى إعادة تحميل الصفحة.', 'error');
             }
         }
         
@@ -1735,11 +1650,10 @@
                         channels[index] = updatedChannel;
                     }
                     
-                    // توقف قصير بين التحديثات
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
                 
-                applyFilters();
+                renderChannels();
                 updateLastUpdated();
                 
             } catch (error) {
@@ -1763,6 +1677,26 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('تم تحميل الصفحة، بدء التطبيق...');
             initializeApp();
+            
+            // إغلاق النافذة المنبثقة عند النقر خارجها
+            document.getElementById('addChannelModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeAddChannelModal();
+                }
+            });
+            
+            // إرسال النموذج عند الضغط على Enter
+            document.getElementById('channelUrlInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    submitChannelRequest();
+                }
+            });
+            
+            document.getElementById('channelNameInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    submitChannelRequest();
+                }
+            });
         });
         
         // التعامل مع الأخطاء العامة
@@ -1770,6 +1704,10 @@
             console.error('خطأ JavaScript:', event.error);
         });
         
+        // التعامل مع الأخطاء غير المعالجة
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Promise غير معالج:', event.reason);
+        });
     </script>
 </body>
 </html>
